@@ -1,71 +1,70 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
-import { FirebaseError } from 'firebase/app';
-
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import { FirebaseError } from "firebase/app";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const { toast } = useToast();
-    const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-        if (!password) {
-            setError('Password is required.');
-            setLoading(false);
-            return;
-        }
-
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            router.push('/');
-        } catch (e) {
-            let errorMessage = 'An unknown error occurred.';
-            if (e instanceof FirebaseError) {
-                switch (e.code) {
-                    case 'auth/user-not-found':
-                    case 'auth/wrong-password':
-                    case 'auth/invalid-credential':
-                        errorMessage = 'Invalid email or password.';
-                        break;
-                    default:
-                        errorMessage = 'Login failed. Please try again.';
-                        break;
-                }
-            }
-            setError(errorMessage);
-            toast({
-                variant: 'destructive',
-                title: 'Login Failed',
-                description: errorMessage,
-            });
-        } finally {
-            setLoading(false);
-        }
+    if (!password) {
+      setError("Password is required.");
+      setLoading(false);
+      return;
     }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push("/");
+    } catch (e) {
+      let errorMessage = "An unknown error occurred.";
+      if (e instanceof FirebaseError) {
+        switch (e.code) {
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+          case "auth/invalid-credential":
+            errorMessage = "Invalid email or password.";
+            break;
+          default:
+            errorMessage = "Login failed. Please try again.";
+            break;
+        }
+      }
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: errorMessage,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center py-12">
@@ -91,27 +90,49 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                 />
+                {state?.errors?.email && (
+                  <p className="text-sm font-medium text-destructive">
+                    {state.errors.email[0]}
+                  </p>
+                )}
               </div>
               <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
-                <Input 
-                    id="password" 
-                    name="password" 
-                    type="password" 
-                    required 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" name="password" type="password" required />
+                {state?.errors?.password && (
+                  <p className="text-sm font-medium text-destructive">
+                    {state.errors.password[0]}
+                  </p>
+                )}
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
                 />
               </div>
+              <SubmitButton />
+              {state?.errors?._form && (
+                <p className="mt-2 text-sm font-medium text-destructive text-center">
+                  {state.errors._form.join(", ")}
+                </p>
+              )}
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? <Loader2 className="animate-spin" /> : 'Login'}
+                {loading ? <Loader2 className="animate-spin" /> : "Login"}
               </Button>
-              {error && <p className="mt-2 text-sm font-medium text-destructive text-center">{error}</p>}
+              {error && (
+                <p className="mt-2 text-sm font-medium text-destructive text-center">
+                  {error}
+                </p>
+              )}
             </div>
           </form>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
+            Don&apos;t have an account?{" "}
             <Link href="/signup" className="underline hover:text-primary">
               Sign up
             </Link>
