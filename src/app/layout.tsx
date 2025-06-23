@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/header';
 import { cn } from '@/lib/utils';
+import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
   title: 'EcoChef',
@@ -27,11 +28,13 @@ export default function RootLayout({
           'min-h-screen bg-background font-body antialiased'
         )}
       >
-        <div className="relative flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-        </div>
-        <Toaster />
+        <AuthProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+            </div>
+            <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
