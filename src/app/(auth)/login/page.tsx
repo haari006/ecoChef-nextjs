@@ -11,40 +11,61 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFormState, useFormStatus } from 'react-dom';
-import { login } from '@/app/(auth)/actions';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
+import { FirebaseError } from 'firebase/app';
 
-const initialState = {
-    message: '',
-    errors: {},
-};
-
-function SubmitButton() {
-    const { pending } = useFormStatus();
-  
-    return (
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? <Loader2 className="animate-spin" /> : 'Login'}
-      </Button>
-    );
-}
 
 export default function LoginPage() {
-    const [state, formAction] = useFormState(login, initialState);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
     const { toast } = useToast();
+    const router = useRouter();
 
-    useEffect(() => {
-        if (state?.errors?._form) {
-          toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: state.errors._form.join(', '),
-          });
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        if (!password) {
+            setError('Password is required.');
+            setLoading(false);
+            return;
         }
-      }, [state, toast]);
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            router.push('/');
+        } catch (e) {
+            let errorMessage = 'An unknown error occurred.';
+            if (e instanceof FirebaseError) {
+                switch (e.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential':
+                        errorMessage = 'Invalid email or password.';
+                        break;
+                    default:
+                        errorMessage = 'Login failed. Please try again.';
+                        break;
+                }
+            }
+            setError(errorMessage);
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: errorMessage,
+            });
+        } finally {
+            setLoading(false);
+        }
+    }
 
   return (
     <div className="flex items-center justify-center py-12">
@@ -56,7 +77,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction}>
+          <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -66,16 +87,27 @@ export default function LoginPage() {
                   type="email"
                   placeholder="m@example.com"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
                 />
-                 {state?.errors?.email && <p className="text-sm font-medium text-destructive">{state.errors.email[0]}</p>}
               </div>
               <div className="grid gap-2">
                   <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required />
-                {state?.errors?.password && <p className="text-sm font-medium text-destructive">{state.errors.password[0]}</p>}
+                <Input 
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    required 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                />
               </div>
-              <SubmitButton />
-              {state?.errors?._form && <p className="mt-2 text-sm font-medium text-destructive text-center">{state.errors._form.join(', ')}</p>}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? <Loader2 className="animate-spin" /> : 'Login'}
+              </Button>
+              {error && <p className="mt-2 text-sm font-medium text-destructive text-center">{error}</p>}
             </div>
           </form>
           <div className="mt-4 text-center text-sm">

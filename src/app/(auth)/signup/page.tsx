@@ -11,40 +11,80 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFormStatus } from 'react-dom';
-import { signup } from '@/app/(auth)/actions';
-import { useActionState, useEffect } from 'react';
+import { createUserInDb } from '@/app/(auth)/actions';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { FirebaseError } from 'firebase/app';
 
-const initialState = {
-    message: '',
-    errors: {},
-};
-
-function SubmitButton() {
-    const { pending } = useFormStatus();
-  
-    return (
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? <Loader2 className="animate-spin" /> : 'Create an account'}
-      </Button>
-    );
-}
 
 export default function SignupPage() {
-    const [state, formAction] = useActionState(signup, initialState);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
     const { toast } = useToast();
+    const router = useRouter();
 
-    useEffect(() => {
-        if (state?.errors?._form) {
-          toast({
-            variant: 'destructive',
-            title: 'Uh oh! Something went wrong.',
-            description: state.errors._form.join(', '),
-          });
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters.');
+            setLoading(false);
+            return;
         }
-      }, [state, toast]);
+
+        try {
+            // Step 1: Create user in Firebase Auth
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Step 2: Update Firebase profile
+            await updateProfile(user, { displayName: name });
+            
+            // Step 3: Create user in MongoDB via Server Action
+            const dbResult = await createUserInDb({
+                uid: user.uid,
+                name: name,
+                email: email
+            });
+
+            if (!dbResult.success) {
+                throw new Error(dbResult.message);
+            }
+
+            // Step 4: Redirect to home
+            router.push('/');
+
+        } catch (e) {
+            let errorMessage = 'An unknown error occurred.';
+             if (e instanceof FirebaseError) {
+                if (e.code === 'auth/email-already-in-use') {
+                    errorMessage = 'This email is already in use.';
+                } else {
+                    errorMessage = 'Signup failed. Please try again.';
+                }
+            } else if (e instanceof Error) {
+                errorMessage = e.message;
+            }
+            setError(errorMessage);
+            toast({
+                variant: 'destructive',
+                title: 'Uh oh! Something went wrong.',
+                description: errorMessage,
+              });
+        } finally {
+            setLoading(false);
+        }
+    }
 
   return (
     <div className="flex items-center justify-center py-12">
@@ -56,12 +96,19 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction}>
+          <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" placeholder="First Last" required />
-                {state?.errors?.name && <p className="text-sm font-medium text-destructive">{state.errors.name[0]}</p>}
+                <Input 
+                    id="name" 
+                    name="name" 
+                    placeholder="First Last" 
+                    required 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={loading}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -71,16 +118,27 @@ export default function SignupPage() {
                   type="email"
                   placeholder="m@example.com"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
                 />
-                {state?.errors?.email && <p className="text-sm font-medium text-destructive">{state.errors.email[0]}</p>}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required />
-                {state?.errors?.password && <p className="text-sm font-medium text-destructive">{state.errors.password[0]}</p>}
+                <Input 
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    required 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                />
               </div>
-              <SubmitButton />
-               {state?.errors?._form && <p className="mt-2 text-sm font-medium text-destructive text-center">{state.errors._form.join(', ')}</p>}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? <Loader2 className="animate-spin" /> : 'Create an account'}
+              </Button>
+               {error && <p className="mt-2 text-sm font-medium text-destructive text-center">{error}</p>}
             </div>
           </form>
           <div className="mt-4 text-center text-sm">
