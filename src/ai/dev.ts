@@ -1,1 +1,6 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/summarize-recipe-for-quick-view.ts';
+import '@/ai/flows/generate-recipe-from-ingredients.ts';
+import '@/ai/flows/filter-recipes-by-dietary-needs.ts';
