@@ -34,6 +34,7 @@ const GenerateRecipeFromIngredientsOutputSchema = z.object({
   instructions: z.array(z.string()).describe('Step-by-step instructions for preparing the recipe.'),
   cookingTime: z.string().describe('The estimated cooking time for the recipe.'),
   dietaryInformation: z.string().optional().describe('Dietary information, such as whether the recipe is vegan, vegetarian, or gluten-free.'),
+  tags: z.array(z.string()).optional().describe('A list of 3-5 relevant tags for the recipe, like "dinner", "quick", "healthy", "dessert".'),
 });
 export type GenerateRecipeFromIngredientsOutput = z.infer<
   typeof GenerateRecipeFromIngredientsOutputSchema
@@ -62,6 +63,7 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   - instructions: Step-by-step instructions for preparing the recipe.
   - cookingTime: The estimated cooking time for the recipe.
   - dietaryInformation: Dietary information, such as whether the recipe is vegan, vegetarian, or gluten-free.
+  - tags: A list of 3-5 relevant tags for the recipe.
   `,
 });
 

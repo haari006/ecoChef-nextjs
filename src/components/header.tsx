@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Leaf, LogOut } from 'lucide-react';
+import { Leaf, LogOut, UserCog, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { logout } from '@/app/(auth)/actions';
@@ -18,6 +18,7 @@ import { Skeleton } from './ui/skeleton';
 
 export default function Header() {
   const { user, loading } = useAuth();
+  const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID;
   
   const handleLogout = async () => {
     await logout();
@@ -32,6 +33,11 @@ export default function Header() {
             EcoChef
           </span>
         </Link>
+        <nav className="flex items-center space-x-4 text-sm font-medium">
+            <Link href="/recipes" className="text-muted-foreground transition-colors hover:text-foreground">
+                Recipes
+            </Link>
+        </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
           <nav className="flex items-center">
             {loading ? (
@@ -54,6 +60,14 @@ export default function Header() {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        {isAdmin && (
+                            <DropdownMenuItem asChild>
+                                <Link href="/admin" className="cursor-pointer">
+                                    <UserCog className="mr-2 h-4 w-4" />
+                                    <span>Admin Dashboard</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log out</span>

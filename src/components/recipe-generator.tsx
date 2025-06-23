@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';
-import { generateRecipeAction } from '@/app/actions';
+import { generateRecipeAction, type GenerateRecipeState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,10 +22,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { ChefHat, Clock, UtensilsCrossed, Star, Loader2, Salad } from 'lucide-react';
+import { ChefHat, Clock, UtensilsCrossed, Star, Loader2, Salad, Tags } from 'lucide-react';
 import type { GenerateRecipeFromIngredientsOutput } from '@/ai/flows/generate-recipe-from-ingredients';
+import { FeedbackForm } from '@/components/feedback-form';
+import Link from 'next/link';
 
-const initialState = {
+const initialState: GenerateRecipeState = {
   message: null,
   recipe: null,
   error: false,
@@ -50,9 +52,7 @@ function SubmitButton() {
   );
 }
 
-function RecipeDisplay({ recipe }: { recipe: GenerateRecipeFromIngredientsOutput }) {
-  const [rating, setRating] = useState(0);
-
+function RecipeDisplay({ recipe }: { recipe: GenerateRecipeFromIngredientsOutput & { _id: string } }) {
   return (
     <Card className="max-w-4xl mx-auto shadow-lg animate-in fade-in-50 duration-500">
       <CardHeader>
@@ -68,6 +68,12 @@ function RecipeDisplay({ recipe }: { recipe: GenerateRecipeFromIngredientsOutput
                  <div className="flex items-center gap-1.5">
                     <Salad className="w-4 h-4" />
                     <span>{recipe.dietaryInformation}</span>
+                </div>
+            )}
+            {recipe.tags && recipe.tags.length > 0 && (
+                 <div className="flex items-center gap-1.5">
+                    <Tags className="w-4 h-4" />
+                    <span>{recipe.tags.join(', ')}</span>
                 </div>
             )}
         </div>
@@ -90,22 +96,16 @@ function RecipeDisplay({ recipe }: { recipe: GenerateRecipeFromIngredientsOutput
           </ol>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-muted/50 p-6 rounded-b-lg">
-          <div className="flex flex-col gap-2">
-            <h4 className="font-semibold">Did you like this recipe?</h4>
-            <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} onClick={() => setRating(star)} aria-label={`Rate ${star} star`}>
-                    <Star
-                        className={`w-6 h-6 cursor-pointer transition-colors ${
-                        rating >= star ? 'text-accent fill-accent' : 'text-muted-foreground/50 hover:text-muted-foreground'
-                        }`}
-                    />
-                    </button>
-                ))}
+      <CardFooter>
+        <div className="w-full">
+            <h3 className="font-bold font-headline text-xl mb-4 text-center">Enjoyed the recipe?</h3>
+            <FeedbackForm recipeId={recipe._id} />
+            <div className='text-center mt-4'>
+                <Button variant="link" asChild>
+                    <Link href={`/recipes/${recipe._id}`}>View permanent link</Link>
+                </Button>
             </div>
-          </div>
-          <Button variant="secondary">Submit Feedback</Button>
+        </div>
       </CardFooter>
     </Card>
   )
@@ -115,7 +115,6 @@ export default function RecipeGenerator() {
   const [state, formAction] = useFormState(generateRecipeAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const { pending } = useFormStatus();
 
   useEffect(() => {
     if (state.message && state.error) {
@@ -153,14 +152,13 @@ export default function RecipeGenerator() {
                 placeholder="e.g., chicken breast, broccoli, garlic, olive oil"
                 required
                 rows={4}
-                disabled={pending}
               />
                {state?.message && state.error && <p className="text-sm font-medium text-destructive">{state.message}</p>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="dietaryRestrictions">Dietary Needs</Label>
-                <Select name="dietaryRestrictions" defaultValue="none" disabled={pending}>
+                <Select name="dietaryRestrictions" defaultValue="none">
                   <SelectTrigger id="dietaryRestrictions">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
@@ -175,7 +173,7 @@ export default function RecipeGenerator() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="cookingTime">Cooking Time</Label>
-                <Select name="cookingTime" defaultValue="any" disabled={pending}>
+                <Select name="cookingTime" defaultValue="any">
                   <SelectTrigger id="cookingTime">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>

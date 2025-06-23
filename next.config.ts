@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  env: {
+    NEXT_PUBLIC_ADMIN_UID: process.env.ADMIN_UID,
+  },
 };
 
 export default nextConfig;
