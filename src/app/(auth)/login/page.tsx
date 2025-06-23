@@ -90,20 +90,8 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                 />
-                {state?.errors?.email && (
-                  <p className="text-sm font-medium text-destructive">
-                    {state.errors.email[0]}
-                  </p>
-                )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required />
-                {state?.errors?.password && (
-                  <p className="text-sm font-medium text-destructive">
-                    {state.errors.password[0]}
-                  </p>
-                )}
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -115,12 +103,6 @@ export default function LoginPage() {
                   disabled={loading}
                 />
               </div>
-              <SubmitButton />
-              {state?.errors?._form && (
-                <p className="mt-2 text-sm font-medium text-destructive text-center">
-                  {state.errors._form.join(", ")}
-                </p>
-              )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? <Loader2 className="animate-spin" /> : "Login"}
               </Button>
