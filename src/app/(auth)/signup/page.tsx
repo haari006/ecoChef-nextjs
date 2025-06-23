@@ -11,9 +11,9 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 import { signup } from '@/app/(auth)/actions';
-import { useEffect } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -33,7 +33,7 @@ function SubmitButton() {
 }
 
 export default function SignupPage() {
-    const [state, formAction] = useFormState(signup, initialState);
+    const [state, formAction] = useActionState(signup, initialState);
     const { toast } = useToast();
 
     useEffect(() => {

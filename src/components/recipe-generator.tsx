@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 import { generateRecipeAction, type GenerateRecipeState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useActionState} from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ChefHat, Clock, UtensilsCrossed, Star, Loader2, Salad, Tags } from 'lucide-react';
 import type { GenerateRecipeFromIngredientsOutput } from '@/ai/flows/generate-recipe-from-ingredients';
@@ -112,7 +112,7 @@ function RecipeDisplay({ recipe }: { recipe: GenerateRecipeFromIngredientsOutput
 }
 
 export default function RecipeGenerator() {
-  const [state, formAction] = useFormState(generateRecipeAction, initialState);
+  const [state, formAction] = useActionState(generateRecipeAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
