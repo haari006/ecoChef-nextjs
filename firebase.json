@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "site": "your-project-id",
+    "rewrites": [
+      {
+        "source": "**",
+        "apphosting": {
+          "backendId": "ecochef-backend",
+          "region": "us-central1"
+        }
+      }
+    ]
+  }
+}
