@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useState, useEffect, useRef, useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Star, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +38,7 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
   }, [user]);
 
   const actionWithToken = submitFeedbackAction.bind(null, idToken);
-  const [state, formAction] = useFormState(actionWithToken, initialState);
+  const [state, formAction] = useActionState(actionWithToken, initialState);
 
   useEffect(() => {
     if (state.message) {
