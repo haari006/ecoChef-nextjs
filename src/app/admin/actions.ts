@@ -4,11 +4,11 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { auth } from '@/lib/firebase';
 import { redirect } from 'next/navigation';
+import { verifySession } from '@/lib/server-auth';
 
-async function verifyAdmin() {
-    const user = auth.currentUser;
+async function verifyAdmin(idToken: string | null) {
+    const user = await verifySession(idToken);
     if (!user || user.uid !== process.env.ADMIN_UID) {
         throw new Error('Not authorized');
     }
@@ -34,8 +34,16 @@ export type RecipeFormState = {
     success?: boolean;
 }
 
-export async function upsertRecipe(prevState: RecipeFormState, formData: FormData): Promise<RecipeFormState> {
-    const user = await verifyAdmin();
+export async function upsertRecipe(idToken: string | null, prevState: RecipeFormState, formData: FormData): Promise<RecipeFormState> {
+    let user;
+    try {
+        user = await verifyAdmin(idToken);
+    } catch (e) {
+        if (e instanceof Error) {
+            return { errors: { _form: [e.message] } };
+        }
+        return { errors: { _form: ['An unknown authentication error occurred.'] } };
+    }
 
     const validatedFields = recipeSchema.safeParse({
         id: formData.get('id'),
@@ -87,8 +95,8 @@ export async function upsertRecipe(prevState: RecipeFormState, formData: FormDat
     redirect('/admin/recipes');
 }
 
-export async function deleteRecipe(id: string) {
-    await verifyAdmin();
+export async function deleteRecipe(idToken: string | null, id: string) {
+    await verifyAdmin(idToken);
     try {
         const client = await clientPromise;
         const db = client.db();
@@ -106,8 +114,8 @@ export async function deleteRecipe(id: string) {
     revalidatePath('/recipes');
 }
 
-export async function getAllFeedback() {
-    await verifyAdmin();
+export async function getAllFeedback(idToken: string | null) {
+    await verifyAdmin(idToken);
     try {
         const client = await clientPromise;
         const db = client.db();

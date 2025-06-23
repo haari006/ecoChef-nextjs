@@ -7,8 +7,8 @@ import {
   type GenerateRecipeFromIngredientsOutput,
 } from '@/ai/flows/generate-recipe-from-ingredients';
 import clientPromise from '@/lib/mongodb';
-import { auth } from '@/lib/firebase';
 import { ObjectId } from 'mongodb';
+import { verifySession } from '@/lib/server-auth';
 
 // Schema for generating a recipe
 const recipeSchema = z.object({
@@ -25,12 +25,18 @@ export type GenerateRecipeState = {
 };
 
 export async function generateRecipeAction(
+  idToken: string | null,
   prevState: GenerateRecipeState,
   formData: FormData
 ): Promise<GenerateRecipeState> {
-  const user = auth.currentUser;
-  if (!user) {
-    return { message: 'You must be logged in to generate a recipe.', error: true };
+  let user;
+  try {
+    user = await verifySession(idToken);
+  } catch (e) {
+    if (e instanceof Error) {
+        return { message: e.message, error: true };
+    }
+    return { message: 'An unknown authentication error occurred.', error: true };
   }
 
   const validatedFields = recipeSchema.safeParse({
@@ -85,12 +91,18 @@ export type FeedbackState = {
 };
 
 export async function submitFeedbackAction(
+    idToken: string | null,
     prevState: FeedbackState,
     formData: FormData
 ): Promise<FeedbackState> {
-    const user = auth.currentUser;
-    if (!user) {
-        return { message: "You must be logged in to submit feedback.", error: true };
+    let user;
+    try {
+        user = await verifySession(idToken);
+    } catch (e) {
+        if (e instanceof Error) {
+            return { message: e.message, error: true };
+        }
+        return { message: 'An unknown authentication error occurred.', error: true };
     }
 
     const validatedFields = feedbackSchema.safeParse({
@@ -109,7 +121,7 @@ export async function submitFeedbackAction(
         await db.collection('feedback').insertOne({
             ...validatedFields.data,
             userId: user.uid,
-            userName: user.displayName,
+            userName: user.name || user.email,
             createdAt: new Date(),
         });
         

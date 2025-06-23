@@ -8,9 +8,10 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import type { GenerateRecipeFromIngredientsOutput } from "@/ai/flows/generate-recipe-from-ingredients";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 type RecipeWithId = GenerateRecipeFromIngredientsOutput & { _id: string };
 
@@ -27,9 +28,21 @@ function SubmitButton({ isEditing }: { isEditing: boolean }) {
 }
 
 export function RecipeForm({ recipe }: { recipe?: RecipeWithId }) {
-    const [state, formAction] = useFormState(upsertRecipe, initialState);
+    const { user } = useAuth();
+    const [idToken, setIdToken] = useState<string | null>(null);
     const { toast } = useToast();
     const isEditing = !!recipe;
+
+    useEffect(() => {
+        if (user) {
+            user.getIdToken().then(setIdToken);
+        } else {
+            setIdToken(null);
+        }
+    }, [user]);
+
+    const actionWithToken = upsertRecipe.bind(null, idToken);
+    const [state, formAction] = useFormState(actionWithToken, initialState);
 
     useEffect(() => {
         if (state.errors?._form) {

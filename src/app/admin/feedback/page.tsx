@@ -1,12 +1,39 @@
+'use client';
+
 import { getAllFeedback } from '../actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Star } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/use-auth';
+import { useEffect, useState } from 'react';
 
-export default async function AdminFeedbackPage() {
-  const allFeedback = await getAllFeedback();
+type Feedback = {
+    _id: string;
+    userName?: string;
+    recipeId: string;
+    rating: number;
+    comment?: string;
+    createdAt: string;
+}
+
+export default function AdminFeedbackPage() {
+  const { user } = useAuth();
+  const [idToken, setIdToken] = useState<string | null>(null);
+  const [allFeedback, setAllFeedback] = useState<Feedback[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      user.getIdToken().then(token => {
+        setIdToken(token);
+        getAllFeedback(token).then(feedback => setAllFeedback(feedback as Feedback[]));
+      });
+    } else {
+      setIdToken(null);
+      setAllFeedback([]);
+    }
+  }, [user]);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">

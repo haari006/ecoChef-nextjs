@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { submitFeedbackAction, type FeedbackState } from '@/app/actions';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
+import { useAuth } from '@/hooks/use-auth';
 
 const initialState: FeedbackState = {};
 
@@ -23,9 +24,21 @@ function SubmitButton() {
 
 export function FeedbackForm({ recipeId }: { recipeId: string }) {
   const [rating, setRating] = useState(0);
-  const [state, formAction] = useFormState(submitFeedbackAction, initialState);
+  const { user } = useAuth();
+  const [idToken, setIdToken] = useState<string | null>(null);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      user.getIdToken().then(setIdToken);
+    } else {
+      setIdToken(null);
+    }
+  }, [user]);
+
+  const actionWithToken = submitFeedbackAction.bind(null, idToken);
+  const [state, formAction] = useFormState(actionWithToken, initialState);
 
   useEffect(() => {
     if (state.message) {
@@ -40,6 +53,14 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
       }
     }
   }, [state, toast]);
+
+  if (!user) {
+    return (
+        <div className="text-center text-muted-foreground p-6 border rounded-lg">
+            You must be logged in to leave feedback.
+        </div>
+    )
+  }
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4 rounded-lg border bg-card text-card-foreground shadow-sm p-6">

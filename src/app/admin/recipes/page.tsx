@@ -1,3 +1,5 @@
+'use client';
+
 import { getRecipes } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,12 +8,26 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { deleteRecipe } from '../actions';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/use-auth';
+import { useEffect, useState } from 'react';
 
 function DeleteButton({ id }: { id: string }) {
-    const deleteAction = deleteRecipe.bind(null, id);
+    const { user } = useAuth();
+    const [idToken, setIdToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            user.getIdToken().then(setIdToken);
+        } else {
+            setIdToken(null);
+        }
+    }, [user]);
+
+    const deleteActionWithToken = deleteRecipe.bind(null, idToken, id);
+    
     return (
-        <form action={deleteAction}>
-            <Button variant="ghost" size="icon" type="submit">
+        <form action={deleteActionWithToken}>
+            <Button variant="ghost" size="icon" type="submit" disabled={!idToken}>
                 <Trash2 className="h-4 w-4" />
                 <span className="sr-only">Delete</span>
             </Button>
@@ -19,8 +35,12 @@ function DeleteButton({ id }: { id: string }) {
     );
 }
 
-export default async function AdminRecipesPage() {
-  const recipes = await getRecipes();
+export default function AdminRecipesPage() {
+  const [recipes, setRecipes] = useState<Awaited<ReturnType<typeof getRecipes>>>([]);
+
+  useEffect(() => {
+    getRecipes().then(setRecipes);
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
