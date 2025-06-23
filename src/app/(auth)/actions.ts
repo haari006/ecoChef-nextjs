@@ -96,7 +96,7 @@ export async function signup(
     }
   }
 
-  redirect('/login');
+  redirect('/');
 }
 
 export async function login(
@@ -139,5 +139,5 @@ export async function logout() {
     } catch (error) {
       console.error('Error signing out: ', error);
     }
-    redirect('/login');
+    redirect('/');
 }
