@@ -13,7 +13,7 @@ export default function AdminLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID;
+  const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID?.trim();
 
   useEffect(() => {
     if (!loading && !isAdmin) {

@@ -9,7 +9,7 @@ import { verifySession } from '@/lib/server-auth';
 
 async function verifyAdmin(idToken: string | null) {
     const user = await verifySession(idToken);
-    if (!user || user.uid !== process.env.ADMIN_UID) {
+    if (!user || user.uid !== process.env.ADMIN_UID?.trim()) {
         throw new Error('Not authorized');
     }
     return user;
