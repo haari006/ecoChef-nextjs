@@ -46,4 +46,7 @@ npm run dev
 
 This will start the development server. You should see a message telling you that the app is running, usually at `http://localhost:9002`. Open that link in your web browser, and you should see EcoChef!
 
+You can also check out the hosted version of EcoChef at [https://studio--veggieversatile.us-central1.hosted.app/](https://studio--veggieversatile.us-central1.hosted.app/).
+
+
 And that's it! You're all set up. Have fun exploring the code and making it your own! ❤️
