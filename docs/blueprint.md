@@ -1,4 +1,4 @@
-# **App Name**: VeggieVersatile
+# **App Name**: EcoChef
 
 ## Core Features:
 
