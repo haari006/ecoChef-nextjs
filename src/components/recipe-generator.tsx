@@ -22,12 +22,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useState, useRef } from "react";
 import { useToast } from '@/hooks/use-toast';
-import { ChefHat, Clock, UtensilsCrossed, Loader2, Salad, Tags } from 'lucide-react';
+import { ChefHat, Clock, UtensilsCrossed, Loader2, Salad, Tags, Info } from 'lucide-react';
 import type { GenerateRecipeFromIngredientsOutput } from '@/ai/flows/generate-recipe-from-ingredients';
 import { FeedbackForm } from '@/components/feedback-form';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import { Checkbox } from "./ui/checkbox";
 
 const initialState: GenerateRecipeState = {
   message: null,
@@ -133,11 +135,78 @@ function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
   )
 }
 
+function MissingIngredientsDialog({ 
+    recipes, 
+    onConfirm 
+}: { 
+    recipes: Recipe[], 
+    onConfirm: () => void 
+}) {
+    const [isOpen, setIsOpen] = useState(true);
+    const [isChecked, setIsChecked] = useState(false);
+
+    const missingIngredients = recipes.flatMap(r => r.missingIngredients || []).filter((v, i, a) => a.indexOf(v) === i);
+
+    if (missingIngredients.length === 0) {
+        // If there are no missing ingredients, confirm immediately and don't show the dialog.
+        onConfirm();
+        return null;
+    }
+
+    const handleConfirm = () => {
+        if (isChecked) {
+            onConfirm();
+            setIsOpen(false);
+        }
+    }
+
+    return (
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                        <Info className="text-primary"/>
+                        Just a heads up!
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        The generated recipes suggest a few ingredients you didn't list. 
+                        We've listed them below.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4">
+                    <p className="font-semibold mb-2">Additional ingredients needed:</p>
+                    <ul className="space-y-1 list-disc list-inside text-sm text-muted-foreground rounded-md bg-muted p-4">
+                        {missingIngredients.map((item, index) => (
+                            <li key={index}>{item}</li>
+                        ))}
+                    </ul>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="terms" checked={isChecked} onCheckedChange={(checked) => setIsChecked(checked as boolean)} />
+                    <label
+                        htmlFor="terms"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        I have these or I'm okay to get them.
+                    </label>
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={handleConfirm} disabled={!isChecked}>
+                        Show me the recipes!
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 export default function RecipeGenerator() {
   const { user } = useAuth();
   const [idToken, setIdToken] = useState<string | null>(null);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  const [unconfirmedRecipes, setUnconfirmedRecipes] = useState<Recipe[] | null>(null);
+  const [confirmedRecipes, setConfirmedRecipes] = useState<Recipe[] | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -157,11 +226,24 @@ export default function RecipeGenerator() {
         title: 'Oh no! Something went wrong.',
         description: state.message,
       });
+      setUnconfirmedRecipes(null);
+      setConfirmedRecipes(null);
     }
     if (state.recipes && state.recipes.length > 0) {
+      const anyMissing = state.recipes.some(r => r.missingIngredients && r.missingIngredients.length > 0);
+      if (anyMissing) {
+          setUnconfirmedRecipes(state.recipes);
+      } else {
+          setConfirmedRecipes(state.recipes);
+      }
       formRef.current?.reset();
     }
   }, [state, toast]);
+
+  const handleRecipeConfirmation = () => {
+    setConfirmedRecipes(unconfirmedRecipes);
+    setUnconfirmedRecipes(null);
+  }
 
   return (
     <div className="space-y-12">
@@ -230,7 +312,8 @@ export default function RecipeGenerator() {
         </form>
       </Card>
       
-      {state.recipes && state.recipes.length > 0 && <RecipeDisplay recipes={state.recipes} />}
+      {unconfirmedRecipes && <MissingIngredientsDialog recipes={unconfirmedRecipes} onConfirm={handleRecipeConfirmation} />}
+      {confirmedRecipes && confirmedRecipes.length > 0 && <RecipeDisplay recipes={confirmedRecipes} />}
     </div>
   );
 }

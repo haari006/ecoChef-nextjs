@@ -30,7 +30,8 @@ export type GenerateRecipeFromIngredientsInput = z.infer<
 
 const RecipeSchema = z.object({
   recipeName: z.string().describe('The name of the generated recipe.'),
-  ingredients: z.array(z.string()).describe('A list of ingredients required for the recipe.'),
+  ingredients: z.array(z.string()).describe('A list of all ingredients required for the recipe.'),
+  missingIngredients: z.array(z.string()).optional().describe('A list of ingredients required for the recipe that were NOT in the user\'s original list.'),
   instructions: z.array(z.string()).describe('Step-by-step instructions for preparing the recipe.'),
   cookingTime: z.string().describe('The estimated cooking time for the recipe.'),
   dietaryInformation: z.string().optional().describe('Dietary information, such as whether the recipe is vegan, vegetarian, or gluten-free.'),
@@ -61,7 +62,10 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   Dietary Restrictions: {{{dietaryRestrictions}}}
   Cooking Time: {{{cookingTime}}}
 
-  Create three different recipes using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. Each recipe should include a name, a list of ingredients, step-by-step instructions, and the estimated cooking time. Provide dietary information if applicable.
+  Create three different recipes using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. Each recipe should include a name, a list of all ingredients, step-by-step instructions, and the estimated cooking time. 
+  
+  IMPORTANT: For each recipe, you MUST also identify which ingredients are required but were not in the original list provided by the user. Populate these in the 'missingIngredients' field. If no extra ingredients are needed, return an empty array for 'missingIngredients'.
+  
   Output the recipes in a structured format within a 'recipes' array.
   `,
 });
