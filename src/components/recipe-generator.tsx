@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect, useState, useRef } from "react";
+import { useActionState, useEffect, useState, useRef, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { generateRecipeAction, type GenerateRecipeState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -207,7 +207,7 @@ function MissingIngredientsDialog({
           </div>
         </div>
         <AlertDialogFooter>
-          <AlertDialogAction onClick={handleConfirm}>
+          <AlertDialogAction onClick={handleCancel}>
             Show Me These Recipes
           </AlertDialogAction>
           <AlertDialogAction onClick={handleConfirm}>
@@ -228,9 +228,8 @@ export default function RecipeGenerator() {
   const [showMissingIngredientsDialog, setShowMissingIngredientsDialog] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[] | null>(null);
   const [guestAttempts, setGuestAttempts] = useState(MAX_GUEST_ATTEMPTS);
-  const [isPending, setIsPending] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [state, formAction] = useActionState(generateRecipeAction, initialState);
+  const [state, formAction, isPending] = useActionState(generateRecipeAction, initialState);
 
   useEffect(() => {
     if (user) {
@@ -243,9 +242,10 @@ export default function RecipeGenerator() {
   }, [user]);
 
   useEffect(() => {
+    if (isPending) return;
+
     if (state.validationError) {
         setValidationError(state.validationError);
-        setIsPending(false);
         return;
     }
 
@@ -255,7 +255,6 @@ export default function RecipeGenerator() {
         title: 'Oh no! Something went wrong.',
         description: state.message,
       });
-      setIsPending(false);
     }
 
     if (state.recipes && state.recipes.length > 0) {
@@ -279,17 +278,20 @@ export default function RecipeGenerator() {
         setRecipes(state.recipes);
         setShowMissingIngredientsDialog(false);
       }
-      setIsPending(false);
-    } else if (state.message && !state.error) {
-        // Successful generation but no recipes (or some other message)
-        setIsPending(false);
     }
-  }, [state, toast, user]);
+  }, [state, toast, user, isPending]);
 
+  const handleFormAction = (formData: FormData) => {
+    setRecipes(null);
+    setValidationError(null);
+    setShowMissingIngredientsDialog(false);
+
+    formData.set('idToken', idToken ?? '');
+    formAction(formData);
+  }
 
   const handleRecipeCancellation = () => {
     setShowMissingIngredientsDialog(false);
-    // User wants to see the recipes even if they have missing ingredients
   }
 
   const handleRegenerateWithSelection = (selectedIngredients: string[]) => {
@@ -302,19 +304,9 @@ export default function RecipeGenerator() {
         formData.set('ingredients', newIngredients);
         formData.set('isDialogFlow', 'false'); // Mark as non-dialog run
         
-        handleFormSubmit(formData);
+        handleFormAction(formData);
     }
   }
-
-  const handleFormSubmit = (formData: FormData) => {
-    setRecipes(null);
-    setValidationError(null);
-    setShowMissingIngredientsDialog(false);
-    setIsPending(true);
-
-    formData.set('idToken', idToken ?? '');
-    formAction(formData);
-  };
 
   const noMoreAttempts = !user && guestAttempts <= 0;
 
@@ -330,7 +322,7 @@ export default function RecipeGenerator() {
       </section>
 
       <Card className="max-w-4xl mx-auto shadow-lg">
-        <form ref={formRef} action={handleFormSubmit}>
+        <form ref={formRef} action={handleFormAction}>
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Your Kitchen Pantry</CardTitle>
             <CardDescription>List your ingredients, separated by commas. Then, select your preferences.</CardDescription>
@@ -429,3 +421,5 @@ export default function RecipeGenerator() {
     </div>
   );
 }
+
+    
