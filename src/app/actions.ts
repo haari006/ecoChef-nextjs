@@ -10,6 +10,7 @@ import {
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { verifySession } from '@/lib/server-auth';
+import { validateIngredientsWithDietaryNeeds } from '@/ai/flows/validate-ingredients-with-dietary-needs';
 
 // Schema for generating a recipe
 const recipeSchema = z.object({
@@ -29,6 +30,7 @@ export type GenerateRecipeState = {
   message?: string | null;
   recipes?: Recipe[] | null;
   error?: boolean;
+  validationError?: string | null;
 };
 
 export async function generateRecipeAction(
@@ -59,6 +61,21 @@ export async function generateRecipeAction(
       message: validatedFields.error.flatten().fieldErrors.ingredients?.[0],
       error: true,
     };
+  }
+
+  // Ingredient validation step
+  if (validatedFields.data.dietaryRestrictions && validatedFields.data.dietaryRestrictions !== 'none') {
+    const validationResult = await validateIngredientsWithDietaryNeeds({
+      ingredients: validatedFields.data.ingredients,
+      dietaryRestrictions: validatedFields.data.dietaryRestrictions,
+    });
+    if (!validationResult.isValid) {
+      return {
+        message: 'Ingredient validation failed.',
+        error: true,
+        validationError: validationResult.reason || 'One or more ingredients do not match the selected dietary restriction.',
+      }
+    }
   }
 
   try {

@@ -22,7 +22,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useState, useRef } from "react";
 import { useToast } from '@/hooks/use-toast';
-import { ChefHat, Clock, UtensilsCrossed, Loader2, Salad, Tags, Info } from 'lucide-react';
+import { ChefHat, Clock, UtensilsCrossed, Loader2, Salad, Tags, Info, AlertTriangle } from 'lucide-react';
 import type { GenerateRecipeFromIngredientsOutput } from '@/ai/flows/generate-recipe-from-ingredients';
 import { FeedbackForm } from '@/components/feedback-form';
 import Link from 'next/link';
@@ -243,6 +243,7 @@ export default function RecipeGenerator() {
   const [confirmedRecipes, setConfirmedRecipes] = useState<Recipe[] | null>(null);
   const [guestAttempts, setGuestAttempts] = useState(MAX_GUEST_ATTEMPTS);
   const { pending } = useFormStatus();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -258,7 +259,14 @@ export default function RecipeGenerator() {
   const [state, formAction] = useFormState(actionWithToken, initialState);
 
   useEffect(() => {
-    if (state.message && state.error && !pending) {
+    if (state.validationError) {
+        setValidationError(state.validationError);
+        setUnconfirmedRecipes(null);
+        setConfirmedRecipes(null);
+        return;
+    }
+
+    if (state.message && state.error && !pending && !state.validationError) {
       toast({
         variant: 'destructive',
         title: 'Oh no! Something went wrong.',
@@ -340,7 +348,7 @@ export default function RecipeGenerator() {
                 required
                 rows={4}
               />
-               {state?.message && state.error && <p className="text-sm font-medium text-destructive">{state.message}</p>}
+               {state?.message && state.error && !state.validationError && <p className="text-sm font-medium text-destructive">{state.message}</p>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="grid gap-2">
@@ -392,6 +400,25 @@ export default function RecipeGenerator() {
           </CardFooter>
         </form>
       </Card>
+
+      <AlertDialog open={!!validationError} onOpenChange={() => setValidationError(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="text-destructive" />
+                    Ingredient Conflict
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    {validationError}
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setValidationError(null)}>
+                    Got it
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {unconfirmedRecipes && (
         <MissingIngredientsDialog 
