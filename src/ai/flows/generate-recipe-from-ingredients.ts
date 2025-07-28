@@ -1,9 +1,9 @@
 // src/ai/flows/generate-recipe-from-ingredients.ts
 'use server';
 /**
- * @fileOverview Generates a recipe based on a list of ingredients provided by the user.
+ * @fileOverview Generates recipes based on a list of ingredients provided by the user.
  *
- * - generateRecipeFromIngredients - A function that generates a recipe from ingredients.
+ * - generateRecipeFromIngredients - A function that generates recipes from ingredients.
  * - GenerateRecipeFromIngredientsInput - The input type for the generateRecipeFromIngredients function.
  * - GenerateRecipeFromIngredientsOutput - The return type for the generateRecipeFromIngredients function.
  */
@@ -28,7 +28,7 @@ export type GenerateRecipeFromIngredientsInput = z.infer<
   typeof GenerateRecipeFromIngredientsInputSchema
 >;
 
-const GenerateRecipeFromIngredientsOutputSchema = z.object({
+const RecipeSchema = z.object({
   recipeName: z.string().describe('The name of the generated recipe.'),
   ingredients: z.array(z.string()).describe('A list of ingredients required for the recipe.'),
   instructions: z.array(z.string()).describe('Step-by-step instructions for preparing the recipe.'),
@@ -36,6 +36,11 @@ const GenerateRecipeFromIngredientsOutputSchema = z.object({
   dietaryInformation: z.string().optional().describe('Dietary information, such as whether the recipe is vegan, vegetarian, or gluten-free.'),
   tags: z.array(z.string()).optional().describe('A list of 3-5 relevant tags for the recipe, like "dinner", "quick", "healthy", "dessert".'),
 });
+
+const GenerateRecipeFromIngredientsOutputSchema = z.object({
+  recipes: z.array(RecipeSchema).describe('A list of 3 generated recipes.'),
+});
+
 export type GenerateRecipeFromIngredientsOutput = z.infer<
   typeof GenerateRecipeFromIngredientsOutputSchema
 >;
@@ -50,20 +55,14 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   name: 'generateRecipeFromIngredientsPrompt',
   input: {schema: GenerateRecipeFromIngredientsInputSchema},
   output: {schema: GenerateRecipeFromIngredientsOutputSchema},
-  prompt: `You are a recipe creation expert. Given a list of ingredients, dietary restrictions, and cooking time preferences, you will generate a detailed recipe.
+  prompt: `You are a recipe creation expert. Given a list of ingredients, dietary restrictions, and cooking time preferences, you will generate three distinct and detailed recipes.
 
   Ingredients: {{{ingredients}}}
   Dietary Restrictions: {{{dietaryRestrictions}}}
   Cooking Time: {{{cookingTime}}}
 
-  Create a recipe using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. The recipe should include a name, a list of ingredients, step-by-step instructions, and the estimated cooking time. Provide dietary information if applicable.
-  Output the recipe in a structured format, including:
-  - recipeName: The name of the generated recipe.
-  - ingredients: A list of ingredients required for the recipe.
-  - instructions: Step-by-step instructions for preparing the recipe.
-  - cookingTime: The estimated cooking time for the recipe.
-  - dietaryInformation: Dietary information, such as whether the recipe is vegan, vegetarian, or gluten-free.
-  - tags: A list of 3-5 relevant tags for the recipe.
+  Create three different recipes using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. Each recipe should include a name, a list of ingredients, step-by-step instructions, and the estimated cooking time. Provide dietary information if applicable.
+  Output the recipes in a structured format within a 'recipes' array.
   `,
 });
 

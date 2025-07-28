@@ -17,10 +17,13 @@ const recipeSchema = z.object({
   cookingTime: z.string().optional(),
 });
 
+// Define the shape of a single recipe for use in the state
+type Recipe = GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string };
+
 // State for the recipe generation form
 export type GenerateRecipeState = {
   message?: string | null;
-  recipe?: (GenerateRecipeFromIngredientsOutput & { _id: string }) | null;
+  recipes?: Recipe[] | null;
   error?: boolean;
 };
 
@@ -53,26 +56,37 @@ export async function generateRecipeAction(
   }
 
   try {
-    const generatedRecipe = await generateRecipeFromIngredients(validatedFields.data);
+    const generationResult = await generateRecipeFromIngredients(validatedFields.data);
+
+    if (!generationResult.recipes || generationResult.recipes.length === 0) {
+      return { message: 'Could not generate any recipes. Please try different ingredients.', error: true };
+    }
+
+    const recipesToInsert = generationResult.recipes.map(recipe => ({
+      ...recipe,
+      userId: user.uid,
+      createdAt: new Date(),
+    }));
 
     const client = await clientPromise;
     const db = client.db();
-    const result = await db.collection('recipes').insertOne({
-      ...generatedRecipe,
-      userId: user.uid,
-      createdAt: new Date(),
-    });
+    const result = await db.collection('recipes').insertMany(recipesToInsert);
 
     revalidatePath('/recipes');
 
+    const insertedRecipes = Object.values(result.insertedIds).map((id, index) => ({
+      ...generationResult.recipes[index],
+      _id: id.toString(),
+    }));
+
     return {
-      recipe: { ...generatedRecipe, _id: result.insertedId.toString() },
-      message: 'Recipe generated successfully!',
+      recipes: insertedRecipes,
+      message: 'Recipes generated successfully!',
       error: false,
     };
   } catch (e) {
     console.error(e);
-    return { message: 'Failed to generate recipe. Please try again later.', error: true };
+    return { message: 'Failed to generate recipes. Please try again later.', error: true };
   }
 }
 
@@ -139,7 +153,8 @@ export async function getRecipes() {
         const client = await clientPromise;
         const db = client.db();
         const recipes = await db.collection('recipes').find({}).sort({ createdAt: -1 }).toArray();
-        return JSON.parse(JSON.stringify(recipes)) as (GenerateRecipeFromIngredientsOutput & { _id: string; })[];
+        // This is a temporary type assertion. In a real app, you'd want to validate the shape of the data from the DB
+        return JSON.parse(JSON.stringify(recipes)) as (GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string; })[];
     } catch (e) {
         console.error(e);
         return [];
@@ -156,7 +171,8 @@ export async function getRecipe(id: string) {
         }
         const recipe = await db.collection('recipes').findOne({ _id: new ObjectId(id) });
         if (!recipe) return null;
-        return JSON.parse(JSON.stringify(recipe)) as (GenerateRecipeFromIngredientsOutput & { _id: string; });
+        // This is a temporary type assertion. In a real app, you'd want to validate the shape of the data from the DB
+        return JSON.parse(JSON.stringify(recipe)) as (GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string; });
     } catch (e) {
         console.error(e);
         return null;

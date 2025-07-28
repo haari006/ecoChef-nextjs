@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormStatus } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
 import { generateRecipeAction, type GenerateRecipeState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,17 +20,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useEffect, useState, useRef, useActionState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useToast } from '@/hooks/use-toast';
 import { ChefHat, Clock, UtensilsCrossed, Loader2, Salad, Tags } from 'lucide-react';
 import type { GenerateRecipeFromIngredientsOutput } from '@/ai/flows/generate-recipe-from-ingredients';
 import { FeedbackForm } from '@/components/feedback-form';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 const initialState: GenerateRecipeState = {
   message: null,
-  recipe: null,
+  recipes: null,
   error: false,
 };
 
@@ -46,69 +47,89 @@ function SubmitButton() {
       ) : (
         <>
           <ChefHat className="mr-2 h-4 w-4" />
-          Generate Recipe
+          Generate Recipes
         </>
       )}
     </Button>
   );
 }
 
-function RecipeDisplay({ recipe }: { recipe: GenerateRecipeFromIngredientsOutput & { _id: string } }) {
+type Recipe = GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string };
+
+function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
+  const [activeRecipe, setActiveRecipe] = useState<Recipe>(recipes[0]);
+
   return (
-    <Card className="max-w-4xl mx-auto shadow-lg animate-in fade-in-50 duration-500">
-      <CardHeader>
-        <CardTitle className="font-headline text-3xl">{recipe.recipeName}</CardTitle>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground pt-2">
-            {recipe.cookingTime && (
-                <div className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    <span>{recipe.cookingTime}</span>
-                </div>
-            )}
-            {recipe.dietaryInformation && (
-                 <div className="flex items-center gap-1.5">
-                    <Salad className="w-4 h-4" />
-                    <span>{recipe.dietaryInformation}</span>
-                </div>
-            )}
-            {recipe.tags && recipe.tags.length > 0 && (
-                 <div className="flex items-center gap-1.5">
-                    <Tags className="w-4 h-4" />
-                    <span>{recipe.tags.join(', ')}</span>
-                </div>
-            )}
-        </div>
-      </CardHeader>
-      <CardContent className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-1">
-          <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2"><UtensilsCrossed className="w-5 h-5 text-primary"/> Ingredients</h3>
-          <ul className="space-y-2 list-disc list-inside text-foreground/80">
-            {recipe.ingredients.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="md:col-span-2">
-          <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2"><ChefHat className="w-5 h-5 text-primary"/> Instructions</h3>
-          <ol className="space-y-4 list-decimal list-inside">
-            {recipe.instructions.map((step, index) => (
-              <li key={index} className="pl-2">{step}</li>
-            ))}
-          </ol>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <div className="w-full">
-            <h3 className="font-bold font-headline text-xl mb-4 text-center">Enjoyed the recipe?</h3>
-            <FeedbackForm recipeId={recipe._id} />
-            <div className='text-center mt-4'>
-                <Button variant="link" asChild>
-                    <Link href={`/recipes/${recipe._id}`}>View permanent link</Link>
-                </Button>
-            </div>
-        </div>
-      </CardFooter>
-    </Card>
+    <div className="max-w-4xl mx-auto animate-in fade-in-50 duration-500">
+      <Tabs defaultValue={recipes[0]._id} className="w-full" onValueChange={(id) => setActiveRecipe(recipes.find(r => r._id === id)!)}>
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-4 h-auto">
+          {recipes.map((recipe) => (
+            <TabsTrigger key={recipe._id} value={recipe._id} className="py-2.5 text-center truncate">{recipe.recipeName}</TabsTrigger>
+          ))}
+        </TabsList>
+        {recipes.map((recipe) => (
+            <TabsContent key={recipe._id} value={recipe._id}>
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="font-headline text-3xl">{recipe.recipeName}</CardTitle>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground pt-2">
+                            {recipe.cookingTime && (
+                                <div className="flex items-center gap-1.5">
+                                    <Clock className="w-4 h-4" />
+                                    <span>{recipe.cookingTime}</span>
+                                </div>
+                            )}
+                            {recipe.dietaryInformation && (
+                                <div className="flex items-center gap-1.5">
+                                    <Salad className="w-4 h-4" />
+                                    <span>{recipe.dietaryInformation}</span>
+                                </div>
+                            )}
+                            {recipe.tags && recipe.tags.length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    <Tags className="w-4 h-4" />
+                                    <span>{recipe.tags.join(', ')}</span>
+                                </div>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="grid md:grid-cols-3 gap-8">
+                        <div className="md:col-span-1">
+                        <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2"><UtensilsCrossed className="w-5 h-5 text-primary"/> Ingredients</h3>
+                        <ul className="space-y-2 list-disc list-inside text-foreground/80">
+                            {recipe.ingredients.map((item, index) => (
+                            <li key={index}>{item}</li>
+                            ))}
+                        </ul>
+                        </div>
+                        <div className="md:col-span-2">
+                        <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2"><ChefHat className="w-5 h-5 text-primary"/> Instructions</h3>
+                        <ol className="space-y-4 list-decimal list-inside">
+                            {recipe.instructions.map((step, index) => (
+                            <li key={index} className="pl-2">{step}</li>
+                            ))}
+                        </ol>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        ))}
+      </Tabs>
+      <Card className="mt-8">
+        <CardHeader>
+            <h3 className="font-bold font-headline text-xl text-center">Enjoyed this recipe?</h3>
+        </CardHeader>
+        <CardContent>
+            <FeedbackForm recipeId={activeRecipe._id} />
+        </CardContent>
+        <CardFooter className='flex-col gap-2'>
+            <p className="text-sm text-muted-foreground">Or view all feedback for this recipe:</p>
+            <Button variant="link" asChild>
+                <Link href={`/recipes/${activeRecipe._id}`}>View Full Recipe Page</Link>
+            </Button>
+        </CardFooter>
+      </Card>
+    </div>
   )
 }
 
@@ -127,7 +148,7 @@ export default function RecipeGenerator() {
   }, [user]);
 
   const actionWithToken = generateRecipeAction.bind(null, idToken);
-  const [state, formAction] = useActionState(actionWithToken, initialState);
+  const [state, formAction] = useFormState(actionWithToken, initialState);
 
   useEffect(() => {
     if (state.message && state.error) {
@@ -136,6 +157,9 @@ export default function RecipeGenerator() {
         title: 'Oh no! Something went wrong.',
         description: state.message,
       });
+    }
+    if (state.recipes && state.recipes.length > 0) {
+      formRef.current?.reset();
     }
   }, [state, toast]);
 
@@ -146,7 +170,7 @@ export default function RecipeGenerator() {
           Turn Leftovers into Delights
         </h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Got some ingredients lying around? Don't let them go to waste! Tell us what you have, and we'll whip up a delicious recipe for you.
+          Got some ingredients lying around? Don't let them go to waste! Tell us what you have, and we'll whip up delicious recipes for you.
         </p>
       </section>
 
@@ -206,7 +230,7 @@ export default function RecipeGenerator() {
         </form>
       </Card>
       
-      {state.recipe && <RecipeDisplay recipe={state.recipe} />}
+      {state.recipes && state.recipes.length > 0 && <RecipeDisplay recipes={state.recipes} />}
     </div>
   );
 }

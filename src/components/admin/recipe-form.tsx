@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormStatus } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
 import { upsertRecipe, type RecipeFormState } from "@/app/admin/actions";
 import {
   Card,
@@ -15,12 +15,12 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import type { GenerateRecipeFromIngredientsOutput } from "@/ai/flows/generate-recipe-from-ingredients";
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
-type RecipeWithId = GenerateRecipeFromIngredientsOutput & { _id: string };
+type RecipeWithId = GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string };
 
 const initialState: RecipeFormState = {};
 
@@ -49,7 +49,7 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithId }) {
     }, [user]);
 
     const actionWithToken = upsertRecipe.bind(null, idToken);
-    const [state, formAction] = useActionState(actionWithToken, initialState);
+    const [state, formAction] = useFormState(actionWithToken, initialState);
 
     useEffect(() => {
         if (state.errors?._form) {

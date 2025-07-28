@@ -6,7 +6,7 @@ import { Clock, Salad } from 'lucide-react';
 import Image from 'next/image';
 
 type RecipeCardProps = {
-  recipe: GenerateRecipeFromIngredientsOutput & { _id: string };
+  recipe: GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string };
 };
 
 export function RecipeCard({ recipe }: RecipeCardProps) {
