@@ -135,78 +135,102 @@ function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
   )
 }
 
-function MissingIngredientsDialog({ 
-    recipes, 
-    onConfirm,
-    onCancel,
-}: { 
-    recipes: Recipe[], 
-    onConfirm: () => void,
-    onCancel: () => void,
+function MissingIngredientsDialog({
+  recipes,
+  onConfirm,
+  onCancel,
+  onRegenerate,
+}: {
+  recipes: Recipe[];
+  onConfirm: () => void;
+  onCancel: () => void;
+  onRegenerate: (selectedIngredients: string[]) => void;
 }) {
-    const [isOpen, setIsOpen] = useState(true);
-    const [isChecked, setIsChecked] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+  const allMissingIngredients = [
+    ...new Set(recipes.flatMap((r) => r.missingIngredients || [])),
+  ];
+  const [selected, setSelected] = useState<Record<string, boolean>>(
+    allMissingIngredients.reduce((acc, i) => ({ ...acc, [i]: true }), {})
+  );
 
-    const missingIngredients = recipes.flatMap(r => r.missingIngredients || []).filter((v, i, a) => a.indexOf(v) === i);
+  if (allMissingIngredients.length === 0) {
+    onConfirm();
+    return null;
+  }
 
-    if (missingIngredients.length === 0) {
-        // If there are no missing ingredients, confirm immediately and don't show the dialog.
-        onConfirm();
-        return null;
-    }
+  const handleCheckboxChange = (ingredient: string, checked: boolean) => {
+    setSelected((prev) => ({ ...prev, [ingredient]: checked }));
+  };
 
-    const handleConfirm = () => {
-        if (isChecked) {
-            onConfirm();
-            setIsOpen(false);
-        }
-    }
-    
-    const handleCancel = () => {
-        onCancel();
-        setIsOpen(false);
-    }
+  const handleRegenerate = () => {
+    const selectedIngredients = Object.entries(selected)
+      .filter(([, isSelected]) => isSelected)
+      .map(([ingredient]) => ingredient);
+    onRegenerate(selectedIngredients);
+    setIsOpen(false);
+  };
 
-    return (
-        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                        <Info className="text-primary"/>
-                        Just a heads up!
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                        The generated recipes suggest a few ingredients you didn't list. 
-                        We've listed them below.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="py-4">
-                    <p className="font-semibold mb-2">Additional ingredients needed:</p>
-                    <ul className="space-y-1 list-disc list-inside text-sm text-muted-foreground rounded-md bg-muted p-4">
-                        {missingIngredients.map((item, index) => (
-                            <li key={index}>{item}</li>
-                        ))}
-                    </ul>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="terms" checked={isChecked} onCheckedChange={(checked) => setIsChecked(checked as boolean)} />
-                    <label
-                        htmlFor="terms"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                        I have these or I'm okay to get them.
-                    </label>
-                </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={handleCancel}>Generate New Recipes</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleConfirm} disabled={!isChecked}>
-                        Show me the recipes!
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-    );
+  const handleConfirm = () => {
+    onConfirm();
+    setIsOpen(false);
+  };
+  const handleCancel = () => {
+    onCancel();
+    setIsOpen(false);
+  };
+
+  return (
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Info className="text-primary" />
+            Just a heads up!
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            The generated recipes suggest a few ingredients you didn't list.
+            Select the ones you're okay with, or confirm to see the current recipes.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-4 space-y-4">
+          <p className="font-semibold">Additional ingredients needed:</p>
+          <div className="space-y-2 rounded-md bg-muted p-4 max-h-40 overflow-y-auto">
+            {allMissingIngredients.map((item, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`missing-${index}`}
+                  checked={selected[item]}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(item, checked as boolean)
+                  }
+                />
+                <label
+                  htmlFor={`missing-${index}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {item}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancel}>
+            Cancel
+          </AlertDialogCancel>
+          <Button variant="outline" onClick={handleRegenerate}>
+            Generate New Recipes
+          </Button>
+          <AlertDialogAction onClick={handleConfirm}>
+            Show me the recipes!
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
+
 
 export default function RecipeGenerator() {
   const { user } = useAuth();
@@ -245,7 +269,8 @@ export default function RecipeGenerator() {
       } else {
           setConfirmedRecipes(state.recipes);
       }
-      formRef.current?.reset();
+      // Don't reset the form here so we can re-use the ingredients
+      // formRef.current?.reset(); 
     }
   }, [state, toast, pending]);
 
@@ -256,10 +281,28 @@ export default function RecipeGenerator() {
 
   const handleRecipeCancellation = () => {
     setUnconfirmedRecipes(null);
-    // Directly submit the form again to re-trigger the action
-    if(formRef.current) {
+    setConfirmedRecipes(null);
+  }
+
+  const handleRegenerateWithSelection = (selectedIngredients: string[]) => {
+    if (formRef.current) {
         const formData = new FormData(formRef.current);
-        formAction(formData);
+        const originalIngredients = formData.get('ingredients') as string || '';
+        const newIngredients = [originalIngredients, ...selectedIngredients].join(', ');
+        
+        // Update the textarea value
+        const ingredientsTextarea = formRef.current.querySelector<HTMLTextAreaElement>('#ingredients');
+        if (ingredientsTextarea) {
+            ingredientsTextarea.value = newIngredients;
+        }
+
+        // Create a new FormData object with the updated ingredients
+        const newFormData = new FormData(formRef.current);
+        newFormData.set('ingredients', newIngredients);
+
+        // Manually trigger the action
+        formAction(newFormData);
+        setUnconfirmedRecipes(null);
     }
   }
 
@@ -330,7 +373,14 @@ export default function RecipeGenerator() {
         </form>
       </Card>
       
-      {unconfirmedRecipes && <MissingIngredientsDialog recipes={unconfirmedRecipes} onConfirm={handleRecipeConfirmation} onCancel={handleRecipeCancellation} />}
+      {unconfirmedRecipes && (
+        <MissingIngredientsDialog 
+            recipes={unconfirmedRecipes} 
+            onConfirm={handleRecipeConfirmation} 
+            onCancel={handleRecipeCancellation}
+            onRegenerate={handleRegenerateWithSelection}
+        />
+      )}
       {confirmedRecipes && confirmedRecipes.length > 0 && <RecipeDisplay recipes={confirmedRecipes} />}
     </div>
   );
