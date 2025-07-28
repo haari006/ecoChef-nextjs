@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useEffect, useState, useRef } from "react";
+import { useFormStatus } from "react-dom";
 import { generateRecipeAction, type GenerateRecipeState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useEffect, useState, useRef } from "react";
 import { useToast } from '@/hooks/use-toast';
 import { ChefHat, Clock, UtensilsCrossed, Loader2, Salad, Tags, Info, AlertTriangle } from 'lucide-react';
 import type { GenerateRecipeFromIngredientsOutput } from '@/ai/flows/generate-recipe-from-ingredients';
@@ -254,9 +254,8 @@ export default function RecipeGenerator() {
       setGuestAttempts(attempts ? parseInt(attempts, 10) : MAX_GUEST_ATTEMPTS);
     }
   }, [user]);
-
-  const actionWithToken = generateRecipeAction.bind(null, idToken);
-  const [state, formAction] = useFormState(actionWithToken, initialState);
+  
+  const [state, formAction] = useActionState(generateRecipeAction, initialState);
 
   useEffect(() => {
     if (state.validationError) {
@@ -334,6 +333,7 @@ export default function RecipeGenerator() {
 
       <Card className="max-w-4xl mx-auto shadow-lg">
         <form ref={formRef} action={formAction}>
+          <input type="hidden" name="idToken" value={idToken ?? ''} />
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Your Kitchen Pantry</CardTitle>
             <CardDescription>List your ingredients, separated by commas. Then, select your preferences.</CardDescription>

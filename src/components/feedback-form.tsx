@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useState, useEffect, useRef, useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Star, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -37,8 +37,7 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
     }
   }, [user]);
 
-  const actionWithToken = submitFeedbackAction.bind(null, idToken);
-  const [state, formAction] = useFormState(actionWithToken, initialState);
+  const [state, formAction] = useActionState(submitFeedbackAction, initialState);
 
   useEffect(() => {
     if (state.message) {
@@ -56,6 +55,7 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4 rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+      <input type="hidden" name="idToken" value={idToken ?? ''} />
       <input type="hidden" name="recipeId" value={recipeId} />
       <input type="hidden" name="rating" value={rating} />
       

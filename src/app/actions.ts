@@ -34,10 +34,10 @@ export type GenerateRecipeState = {
 };
 
 export async function generateRecipeAction(
-  idToken: string | null,
   prevState: GenerateRecipeState,
   formData: FormData
 ): Promise<GenerateRecipeState> {
+  const idToken = formData.get('idToken') as string | null;
   let user;
   if (idToken) {
     try {
@@ -133,10 +133,10 @@ const anonymousUsernames = [
 ];
 
 export async function submitFeedbackAction(
-    idToken: string | null,
     prevState: FeedbackState,
     formData: FormData
 ): Promise<FeedbackState> {
+    const idToken = formData.get('idToken') as string | null;
     let user = null;
     if (idToken) {
         try {
@@ -238,6 +238,9 @@ export async function getFeedbackForRecipe(recipeId: string) {
 // Action to toggle favorite status
 export async function toggleFavoriteAction(idToken: string | null, recipeId: string) {
     let user;
+    if (!idToken) {
+        return { success: false, message: 'You must be logged in to favorite recipes.' };
+    }
     try {
         user = await verifySession(idToken);
     } catch (e) {
@@ -288,6 +291,9 @@ export async function toggleFavoriteAction(idToken: string | null, recipeId: str
 
 export async function getFavoriteRecipes(idToken: string | null) {
   let user;
+  if (!idToken) {
+    return [];
+  }
   try {
       user = await verifySession(idToken);
   } catch (e) {

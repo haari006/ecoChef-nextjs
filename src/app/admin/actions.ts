@@ -34,7 +34,8 @@ export type RecipeFormState = {
     success?: boolean;
 }
 
-export async function upsertRecipe(idToken: string | null, prevState: RecipeFormState, formData: FormData): Promise<RecipeFormState> {
+export async function upsertRecipe(prevState: RecipeFormState, formData: FormData): Promise<RecipeFormState> {
+    const idToken = formData.get('idToken') as string | null;
     let user;
     try {
         user = await verifyAdmin(idToken);
