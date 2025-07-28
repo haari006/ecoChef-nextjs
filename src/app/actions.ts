@@ -91,7 +91,7 @@ export async function generateRecipeAction(
         strict: !isDialogFlow,
     });
 
-    if (!generationResult.recipes || generationResult.recipes.length === 0) {
+    if (!generationResult || !generationResult.recipes || generationResult.recipes.length === 0) {
       return { message: 'Could not generate any recipes. Please try different ingredients.', error: true };
     }
 
@@ -120,7 +120,11 @@ export async function generateRecipeAction(
     };
   } catch (e) {
     console.error(e);
-    return { message: 'Failed to generate recipes. Please try again later.', error: true };
+    const errorMessage = e instanceof Error ? e.message : 'An unexpected error occurred.';
+    return { 
+        message: `The AI failed to generate recipes. This could be due to a network issue or content restrictions. Please try again. (Error: ${errorMessage})`, 
+        error: true 
+    };
   }
 }
 

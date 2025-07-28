@@ -71,7 +71,7 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
 
   Create three different recipes using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. Each recipe should include a name, a list of all ingredients, step-by-step instructions, and the estimated cooking time. 
     
-  Output the recipes in a structured format within a 'recipes' array.
+  Output the recipes in a structured format within a 'recipes' array. If you cannot generate recipes for any reason (e.g., the combination is impossible), return an empty 'recipes' array.
   `,
 });
 
@@ -83,6 +83,9 @@ const generateRecipeFromIngredientsFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await generateRecipeFromIngredientsPrompt(input);
-    return output!;
+    if (!output) {
+        throw new Error("The AI model did not return a valid response.");
+    }
+    return output;
   }
 );
