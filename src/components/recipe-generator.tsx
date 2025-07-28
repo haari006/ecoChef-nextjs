@@ -137,10 +137,12 @@ function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
 
 function MissingIngredientsDialog({ 
     recipes, 
-    onConfirm 
+    onConfirm,
+    onCancel,
 }: { 
     recipes: Recipe[], 
-    onConfirm: () => void 
+    onConfirm: () => void,
+    onCancel: () => void,
 }) {
     const [isOpen, setIsOpen] = useState(true);
     const [isChecked, setIsChecked] = useState(false);
@@ -158,6 +160,11 @@ function MissingIngredientsDialog({
             onConfirm();
             setIsOpen(false);
         }
+    }
+    
+    const handleCancel = () => {
+        onCancel();
+        setIsOpen(false);
     }
 
     return (
@@ -191,6 +198,7 @@ function MissingIngredientsDialog({
                     </label>
                 </div>
                 <AlertDialogFooter>
+                    <AlertDialogCancel onClick={handleCancel}>Generate New Recipes</AlertDialogCancel>
                     <AlertDialogAction onClick={handleConfirm} disabled={!isChecked}>
                         Show me the recipes!
                     </AlertDialogAction>
@@ -207,6 +215,7 @@ export default function RecipeGenerator() {
   const formRef = useRef<HTMLFormElement>(null);
   const [unconfirmedRecipes, setUnconfirmedRecipes] = useState<Recipe[] | null>(null);
   const [confirmedRecipes, setConfirmedRecipes] = useState<Recipe[] | null>(null);
+  const { pending } = useFormStatus();
 
   useEffect(() => {
     if (user) {
@@ -220,7 +229,7 @@ export default function RecipeGenerator() {
   const [state, formAction] = useFormState(actionWithToken, initialState);
 
   useEffect(() => {
-    if (state.message && state.error) {
+    if (state.message && state.error && !pending) {
       toast({
         variant: 'destructive',
         title: 'Oh no! Something went wrong.',
@@ -238,11 +247,20 @@ export default function RecipeGenerator() {
       }
       formRef.current?.reset();
     }
-  }, [state, toast]);
+  }, [state, toast, pending]);
 
   const handleRecipeConfirmation = () => {
     setConfirmedRecipes(unconfirmedRecipes);
     setUnconfirmedRecipes(null);
+  }
+
+  const handleRecipeCancellation = () => {
+    setUnconfirmedRecipes(null);
+    // Directly submit the form again to re-trigger the action
+    if(formRef.current) {
+        const formData = new FormData(formRef.current);
+        formAction(formData);
+    }
   }
 
   return (
@@ -312,7 +330,7 @@ export default function RecipeGenerator() {
         </form>
       </Card>
       
-      {unconfirmedRecipes && <MissingIngredientsDialog recipes={unconfirmedRecipes} onConfirm={handleRecipeConfirmation} />}
+      {unconfirmedRecipes && <MissingIngredientsDialog recipes={unconfirmedRecipes} onConfirm={handleRecipeConfirmation} onCancel={handleRecipeCancellation} />}
       {confirmedRecipes && confirmedRecipes.length > 0 && <RecipeDisplay recipes={confirmedRecipes} />}
     </div>
   );
