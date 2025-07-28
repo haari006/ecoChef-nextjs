@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { useState, useEffect, useRef } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import { Star, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +38,7 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
   }, [user]);
 
   const actionWithToken = submitFeedbackAction.bind(null, idToken);
-  const [state, formAction] = useActionState(actionWithToken, initialState);
+  const [state, formAction] = useFormState(actionWithToken, initialState);
 
   useEffect(() => {
     if (state.message) {
@@ -53,14 +53,6 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
       }
     }
   }, [state, toast]);
-
-  if (!user) {
-    return (
-        <div className="text-center text-muted-foreground p-6 border rounded-lg">
-            You must be logged in to leave feedback.
-        </div>
-    )
-  }
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4 rounded-lg border bg-card text-card-foreground shadow-sm p-6">
@@ -83,7 +75,7 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
       </div>
       
       <div className="grid w-full gap-1.5">
-        <Label htmlFor="comment">Leave a comment (optional)</Label>
+        <Label htmlFor="comment">Leave a comment</Label>
         <Textarea placeholder="Tell us what you think..." id="comment" name="comment" />
       </div>
 

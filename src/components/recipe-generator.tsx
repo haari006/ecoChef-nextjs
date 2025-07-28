@@ -37,10 +37,12 @@ const initialState: GenerateRecipeState = {
   error: false,
 };
 
-function SubmitButton() {
+const MAX_GUEST_ATTEMPTS = 3;
+
+function SubmitButton({ disabled }: { disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-auto" size="lg">
+    <Button type="submit" disabled={pending || disabled} className="w-full sm:w-auto" size="lg">
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -239,6 +241,7 @@ export default function RecipeGenerator() {
   const formRef = useRef<HTMLFormElement>(null);
   const [unconfirmedRecipes, setUnconfirmedRecipes] = useState<Recipe[] | null>(null);
   const [confirmedRecipes, setConfirmedRecipes] = useState<Recipe[] | null>(null);
+  const [guestAttempts, setGuestAttempts] = useState(MAX_GUEST_ATTEMPTS);
   const { pending } = useFormStatus();
 
   useEffect(() => {
@@ -246,6 +249,8 @@ export default function RecipeGenerator() {
       user.getIdToken().then(setIdToken);
     } else {
       setIdToken(null);
+      const attempts = localStorage.getItem('guestAttempts');
+      setGuestAttempts(attempts ? parseInt(attempts, 10) : MAX_GUEST_ATTEMPTS);
     }
   }, [user]);
 
@@ -263,16 +268,19 @@ export default function RecipeGenerator() {
       setConfirmedRecipes(null);
     }
     if (state.recipes && state.recipes.length > 0) {
+      if (!user) {
+        const newAttemptCount = guestAttempts - 1;
+        setGuestAttempts(newAttemptCount);
+        localStorage.setItem('guestAttempts', newAttemptCount.toString());
+      }
       const anyMissing = state.recipes.some(r => r.missingIngredients && r.missingIngredients.length > 0);
       if (anyMissing) {
           setUnconfirmedRecipes(state.recipes);
       } else {
           setConfirmedRecipes(state.recipes);
       }
-      // Don't reset the form here so we can re-use the ingredients
-      // formRef.current?.reset(); 
     }
-  }, [state, toast, pending]);
+  }, [state, toast, pending, user, guestAttempts]);
 
   const handleRecipeConfirmation = () => {
     setConfirmedRecipes(unconfirmedRecipes);
@@ -290,21 +298,20 @@ export default function RecipeGenerator() {
         const originalIngredients = formData.get('ingredients') as string || '';
         const newIngredients = [originalIngredients, ...selectedIngredients].join(', ');
         
-        // Update the textarea value
         const ingredientsTextarea = formRef.current.querySelector<HTMLTextAreaElement>('#ingredients');
         if (ingredientsTextarea) {
             ingredientsTextarea.value = newIngredients;
         }
 
-        // Create a new FormData object with the updated ingredients
         const newFormData = new FormData(formRef.current);
         newFormData.set('ingredients', newIngredients);
 
-        // Manually trigger the action
         formAction(newFormData);
         setUnconfirmedRecipes(null);
     }
   }
+
+  const noMoreAttempts = !user && guestAttempts <= 0;
 
   return (
     <div className="space-y-12">
@@ -367,8 +374,21 @@ export default function RecipeGenerator() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end">
-            <SubmitButton />
+          <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-4">
+             {!user && (
+                <div className="text-sm text-muted-foreground">
+                    {noMoreAttempts ? (
+                        <p>
+                            You're out of free generations. <Link href="/signup" className="underline text-primary">Sign up</Link> for unlimited recipes!
+                        </p>
+                    ) : (
+                        <p>
+                            You have <span className="font-bold text-foreground">{guestAttempts}</span> free generation{guestAttempts === 1 ? '' : 's'} left.
+                        </p>
+                    )}
+                </div>
+            )}
+            <SubmitButton disabled={noMoreAttempts} />
           </CardFooter>
         </form>
       </Card>

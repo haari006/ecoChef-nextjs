@@ -37,13 +37,15 @@ export async function generateRecipeAction(
   formData: FormData
 ): Promise<GenerateRecipeState> {
   let user;
-  try {
-    user = await verifySession(idToken);
-  } catch (e) {
-    if (e instanceof Error) {
-        return { message: e.message, error: true };
+  if (idToken) {
+    try {
+      user = await verifySession(idToken);
+    } catch (e) {
+      if (e instanceof Error) {
+          return { message: e.message, error: true };
+      }
+      return { message: 'An unknown authentication error occurred.', error: true };
     }
-    return { message: 'An unknown authentication error occurred.', error: true };
   }
 
   const validatedFields = recipeSchema.safeParse({
@@ -68,7 +70,7 @@ export async function generateRecipeAction(
 
     const recipesToInsert = generationResult.recipes.map(recipe => ({
       ...recipe,
-      userId: user.uid,
+      userId: user?.uid ?? 'guest', // Mark guest recipes
       createdAt: new Date(),
     }));
 
@@ -108,19 +110,23 @@ export type FeedbackState = {
     success?: boolean;
 };
 
+const anonymousUsernames = [
+    'Anonymous Artichoke', 'Mysterious Mushroom', 'Secretive Shallot', 'Incognito Ingredient',
+    'Unnamed Umami', 'Hidden Herb', 'Classified Caraway', 'Covert Cilantro', 'Private Parsley'
+];
+
 export async function submitFeedbackAction(
     idToken: string | null,
     prevState: FeedbackState,
     formData: FormData
 ): Promise<FeedbackState> {
-    let user;
-    try {
-        user = await verifySession(idToken);
-    } catch (e) {
-        if (e instanceof Error) {
-            return { message: e.message, error: true };
+    let user = null;
+    if (idToken) {
+        try {
+            user = await verifySession(idToken);
+        } catch (e) {
+            // Ignore token verification errors for guests
         }
-        return { message: 'An unknown authentication error occurred.', error: true };
     }
 
     const validatedFields = feedbackSchema.safeParse({
@@ -136,10 +142,14 @@ export async function submitFeedbackAction(
     try {
         const client = await clientPromise;
         const db = client.db();
+
+        const userId = user?.uid;
+        const userName = user?.name || user?.email || anonymousUsernames[Math.floor(Math.random() * anonymousUsernames.length)];
+
         await db.collection('feedback').insertOne({
             ...validatedFields.data,
-            userId: user.uid,
-            userName: user.name || user.email,
+            userId: userId ?? 'guest',
+            userName: userName,
             createdAt: new Date(),
         });
         
