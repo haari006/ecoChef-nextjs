@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-recipe-from-ingredients.ts
 'use server';
 /**
@@ -5,7 +6,7 @@
  *
  * - generateRecipeFromIngredients - A function that generates recipes from ingredients.
  * - GenerateRecipeFromIngredientsInput - The input type for the generateRecipeFromIngredients function.
- * - GenerateRecipeFromIngredientsOutput - The return type for the generateRecipeFromIngredients function.
+ * - GenerateRecipeFromIngredientsOutput - The return type for the generateRecipeFromingredients function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -23,6 +24,7 @@ const GenerateRecipeFromIngredientsInputSchema = z.object({
     .string()
     .optional()
     .describe('Optional cooking time preference, such as quick (under 30 minutes), medium (30-60 minutes), or long (over 60 minutes).'),
+  strict: z.boolean().optional().describe('If true, the model should ONLY use the provided ingredients and not suggest any new ones.')
 });
 export type GenerateRecipeFromIngredientsInput = z.infer<
   typeof GenerateRecipeFromIngredientsInputSchema
@@ -61,11 +63,14 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   Ingredients: {{{ingredients}}}
   Dietary Restrictions: {{{dietaryRestrictions}}}
   Cooking Time: {{{cookingTime}}}
+  {{#if strict}}
+  IMPORTANT: You MUST ONLY use the ingredients from the list provided. Do not suggest or add any other ingredients. The 'missingIngredients' field for all recipes MUST be an empty array.
+  {{else}}
+  IMPORTANT: For each recipe, you MUST identify which ingredients are required but were not in the original list provided by the user. Populate these in the 'missingIngredients' field. If no extra ingredients are needed, return an empty array for 'missingIngredients'.
+  {{/if}}
 
   Create three different recipes using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. Each recipe should include a name, a list of all ingredients, step-by-step instructions, and the estimated cooking time. 
-  
-  IMPORTANT: For each recipe, you MUST also identify which ingredients are required but were not in the original list provided by the user. Populate these in the 'missingIngredients' field. If no extra ingredients are needed, return an empty array for 'missingIngredients'.
-  
+    
   Output the recipes in a structured format within a 'recipes' array.
   `,
 });

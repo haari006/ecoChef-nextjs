@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect, useState, useRef, useTransition } from "react";
@@ -146,24 +147,18 @@ function MissingIngredientsDialog({
   onConfirm: (selectedIngredients: string[]) => void;
   onCancel: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
   const allMissingIngredients = [
     ...new Set(recipes.flatMap((r) => r.missingIngredients || [])),
   ];
-  const [selected, setSelected] = useState<Record<string, boolean>>(
-    allMissingIngredients.reduce((acc, i) => ({ ...acc, [i]: true }), {})
-  );
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // Reset selected state if recipes change (to avoid showing old selections)
-    setSelected(allMissingIngredients.reduce((acc, i) => ({ ...acc, [i]: true }), {}));
+    // Initialize state only when allMissingIngredients is populated
+    if (allMissingIngredients.length > 0) {
+        setSelected(allMissingIngredients.reduce((acc, i) => ({ ...acc, [i]: true }), {}));
+    }
   }, [recipes]);
-
-
-  if (allMissingIngredients.length === 0) {
-    onConfirm([]); // No missing ingredients, just confirm with an empty array.
-    return null;
-  }
+  
 
   const handleCheckboxChange = (ingredient: string, checked: boolean) => {
     setSelected((prev) => ({ ...prev, [ingredient]: checked }));
@@ -174,16 +169,14 @@ function MissingIngredientsDialog({
       .filter(([, isSelected]) => isSelected)
       .map(([ingredient]) => ingredient);
     onConfirm(selectedIngredients);
-    setIsOpen(false);
   };
 
   const handleCancel = () => {
     onCancel();
-    setIsOpen(false);
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+    <AlertDialog open={true} onOpenChange={handleCancel}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
@@ -192,7 +185,7 @@ function MissingIngredientsDialog({
           </AlertDialogTitle>
           <AlertDialogDescription>
             The generated recipes suggest a few ingredients you didn't list.
-            Uncheck any you don't want to use.
+            Uncheck any you don't want to use, then generate new recipes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-4 space-y-4">
@@ -202,7 +195,7 @@ function MissingIngredientsDialog({
               <div key={index} className="flex items-center space-x-2">
                 <Checkbox
                   id={`missing-${index}`}
-                  checked={selected[item]}
+                  checked={selected[item] ?? true}
                   onCheckedChange={(checked) =>
                     handleCheckboxChange(item, checked as boolean)
                   }
@@ -236,8 +229,8 @@ export default function RecipeGenerator() {
   const [idToken, setIdToken] = useState<string | null>(null);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const [unconfirmedRecipes, setUnconfirmedRecipes] = useState<Recipe[] | null>(null);
-  const [confirmedRecipes, setConfirmedRecipes] = useState<Recipe[] | null>(null);
+  const [showMissingIngredientsDialog, setShowMissingIngredientsDialog] = useState(false);
+  const [recipes, setRecipes] = useState<Recipe[] | null>(null);
   const [guestAttempts, setGuestAttempts] = useState(MAX_GUEST_ATTEMPTS);
   const [isPending, startTransition] = useTransition();
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -255,10 +248,11 @@ export default function RecipeGenerator() {
   const [state, formAction] = useActionState(generateRecipeAction, initialState);
 
   useEffect(() => {
+    setRecipes(null);
+    setShowMissingIngredientsDialog(false);
+
     if (state.validationError) {
         setValidationError(state.validationError);
-        setUnconfirmedRecipes(null);
-        setConfirmedRecipes(null);
         return;
     }
 
@@ -268,9 +262,8 @@ export default function RecipeGenerator() {
         title: 'Oh no! Something went wrong.',
         description: state.message,
       });
-      setUnconfirmedRecipes(null);
-      setConfirmedRecipes(null);
     }
+
     if (state.recipes && state.recipes.length > 0) {
       if (!user) {
         setGuestAttempts((prev) => {
@@ -279,14 +272,27 @@ export default function RecipeGenerator() {
           return newAttemptCount;
         });
       }
-      setUnconfirmedRecipes(state.recipes);
+
+      const allMissingIngredients = [
+        ...new Set(state.recipes.flatMap((r) => r.missingIngredients || [])),
+      ];
+
+      // Only show dialog if this is the *first* run (isDialogFlow=true) and there are missing ingredients.
+      const isDialogFlow = state.isDialogFlow ?? true;
+      if (allMissingIngredients.length > 0 && isDialogFlow) {
+        setRecipes(state.recipes);
+        setShowMissingIngredientsDialog(true);
+      } else {
+        // Otherwise, just show the recipes
+        setRecipes(state.recipes);
+      }
     }
   }, [state, toast, isPending, user]);
 
 
   const handleRecipeCancellation = () => {
-    setUnconfirmedRecipes(null);
-    setConfirmedRecipes(null);
+    setShowMissingIngredientsDialog(false);
+    setRecipes(null); // Clear recipes if user cancels
   }
 
   const handleRegenerateWithSelection = (selectedIngredients: string[]) => {
@@ -295,18 +301,13 @@ export default function RecipeGenerator() {
         const originalIngredients = formData.get('ingredients') as string || '';
         const newIngredients = [originalIngredients, ...selectedIngredients].filter(Boolean).join(', ');
         
-        const ingredientsTextarea = formRef.current.querySelector<HTMLTextAreaElement>('#ingredients');
-        if (ingredientsTextarea) {
-            ingredientsTextarea.value = newIngredients;
-        }
-
-        setUnconfirmedRecipes(null);
-        setConfirmedRecipes(null);
+        setShowMissingIngredientsDialog(false);
+        setRecipes(null);
 
         startTransition(() => {
             const newFormData = new FormData(formRef.current!);
             newFormData.set('ingredients', newIngredients);
-
+            newFormData.set('isDialogFlow', 'false'); // Mark this as a non-dialog flow run
             formAction(newFormData);
         });
     }
@@ -396,7 +397,7 @@ export default function RecipeGenerator() {
                     )}
                 </div>
             )}
-            <SubmitButton disabled={noMoreAttempts} />
+            <SubmitButton disabled={noMoreAttempts || isPending} />
           </CardFooter>
         </form>
       </Card>
@@ -420,16 +421,14 @@ export default function RecipeGenerator() {
         </AlertDialogContent>
       </AlertDialog>
       
-      {unconfirmedRecipes && unconfirmedRecipes.length > 0 && (
+      {showMissingIngredientsDialog && recipes && (
         <MissingIngredientsDialog 
-            recipes={unconfirmedRecipes} 
+            recipes={recipes} 
             onConfirm={handleRegenerateWithSelection} 
             onCancel={handleRecipeCancellation}
         />
       )}
-      {state.recipes && state.recipes.length > 0 && !unconfirmedRecipes && <RecipeDisplay recipes={state.recipes} />}
+      {recipes && !showMissingIngredientsDialog && <RecipeDisplay recipes={recipes} />}
     </div>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 // src/app/actions.ts
 'use server';
 
@@ -17,6 +18,7 @@ const recipeSchema = z.object({
   ingredients: z.string().min(3, 'Please enter at least one ingredient.'),
   dietaryRestrictions: z.string().optional(),
   cookingTime: z.string().optional(),
+  isDialogFlow: z.string().optional(), // Used to track if this is the first run
 });
 
 // Define the shape of a single recipe for use in the state
@@ -31,6 +33,7 @@ export type GenerateRecipeState = {
   recipes?: Recipe[] | null;
   error?: boolean;
   validationError?: string | null;
+  isDialogFlow?: boolean;
 };
 
 export async function generateRecipeAction(
@@ -54,6 +57,7 @@ export async function generateRecipeAction(
     ingredients: formData.get('ingredients'),
     dietaryRestrictions: formData.get('dietaryRestrictions'),
     cookingTime: formData.get('cookingTime'),
+    isDialogFlow: formData.get('isDialogFlow'),
   });
 
   if (!validatedFields.success) {
@@ -62,6 +66,8 @@ export async function generateRecipeAction(
       error: true,
     };
   }
+  
+  const isDialogFlow = validatedFields.data.isDialogFlow !== 'false';
 
   // Ingredient validation step
   if (validatedFields.data.dietaryRestrictions && validatedFields.data.dietaryRestrictions !== 'none') {
@@ -79,7 +85,11 @@ export async function generateRecipeAction(
   }
 
   try {
-    const generationResult = await generateRecipeFromIngredients(validatedFields.data);
+    const generationResult = await generateRecipeFromIngredients({
+        ...validatedFields.data,
+        // If this is the second run (user confirmed ingredients), tell the AI to be strict.
+        strict: !isDialogFlow,
+    });
 
     if (!generationResult.recipes || generationResult.recipes.length === 0) {
       return { message: 'Could not generate any recipes. Please try different ingredients.', error: true };
@@ -106,6 +116,7 @@ export async function generateRecipeAction(
       recipes: insertedRecipes,
       message: 'Recipes generated successfully!',
       error: false,
+      isDialogFlow: isDialogFlow,
     };
   } catch (e) {
     console.error(e);
