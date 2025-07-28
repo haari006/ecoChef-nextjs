@@ -1,3 +1,4 @@
+// src/app/actions.ts
 'use server';
 
 import { z } from 'zod';
@@ -18,7 +19,10 @@ const recipeSchema = z.object({
 });
 
 // Define the shape of a single recipe for use in the state
-type Recipe = GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string };
+export type Recipe = GenerateRecipeFromIngredientsOutput['recipes'][0] & {
+  _id: string;
+  isFavorited?: boolean;
+};
 
 // State for the recipe generation form
 export type GenerateRecipeState = {
@@ -148,35 +152,47 @@ export async function submitFeedbackAction(
 }
 
 // Action to get all recipes
-export async function getRecipes() {
-    try {
-        const client = await clientPromise;
-        const db = client.db();
-        const recipes = await db.collection('recipes').find({}).sort({ createdAt: -1 }).toArray();
-        // This is a temporary type assertion. In a real app, you'd want to validate the shape of the data from the DB
-        return JSON.parse(JSON.stringify(recipes)) as (GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string; })[];
-    } catch (e) {
-        console.error(e);
-        return [];
-    }
+export async function getRecipes(userId?: string | null) {
+  try {
+      const client = await clientPromise;
+      const db = client.db();
+      const recipes = await db.collection('recipes').find({}).sort({ createdAt: -1 }).toArray();
+
+      if (userId) {
+          const favorites = await db.collection('favorites').find({ userId }).toArray();
+          const favoriteIds = new Set(favorites.map(f => f.recipeId.toString()));
+          recipes.forEach(r => {
+              (r as any).isFavorited = favoriteIds.has(r._id.toString());
+          });
+      }
+      
+      return JSON.parse(JSON.stringify(recipes)) as Recipe[];
+  } catch (e) {
+      console.error(e);
+      return [];
+  }
 }
 
 // Action to get a single recipe by ID
-export async function getRecipe(id: string) {
-    try {
-        const client = await clientPromise;
-        const db = client.db();
-        if (!ObjectId.isValid(id)) {
-            return null;
-        }
-        const recipe = await db.collection('recipes').findOne({ _id: new ObjectId(id) });
-        if (!recipe) return null;
-        // This is a temporary type assertion. In a real app, you'd want to validate the shape of the data from the DB
-        return JSON.parse(JSON.stringify(recipe)) as (GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string; });
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
+export async function getRecipe(id: string, userId?: string | null) {
+  try {
+      const client = await clientPromise;
+      const db = client.db();
+      if (!ObjectId.isValid(id)) {
+          return null;
+      }
+      const recipe = await db.collection('recipes').findOne({ _id: new ObjectId(id) });
+      if (!recipe) return null;
+
+      if (userId) {
+          const favorite = await db.collection('favorites').findOne({ userId, recipeId: new ObjectId(id) });
+          (recipe as any).isFavorited = !!favorite;
+      }
+      return JSON.parse(JSON.stringify(recipe)) as Recipe;
+  } catch (e) {
+      console.error(e);
+      return null;
+  }
 }
 
 // Action to get feedback for a recipe
@@ -190,4 +206,97 @@ export async function getFeedbackForRecipe(recipeId: string) {
         console.error(e);
         return [];
     }
+}
+
+// Action to toggle favorite status
+export async function toggleFavoriteAction(idToken: string | null, recipeId: string) {
+    let user;
+    try {
+        user = await verifySession(idToken);
+    } catch (e) {
+        if (e instanceof Error) {
+            return { success: false, message: e.message };
+        }
+        return { success: false, message: 'An unknown authentication error occurred.' };
+    }
+
+    if (!ObjectId.isValid(recipeId)) {
+        return { success: false, message: 'Invalid recipe ID.' };
+    }
+
+    try {
+        const client = await clientPromise;
+        const db = client.db();
+        const favoritesCollection = db.collection('favorites');
+
+        const existingFavorite = await favoritesCollection.findOne({
+            userId: user.uid,
+            recipeId: new ObjectId(recipeId),
+        });
+
+        if (existingFavorite) {
+            // Remove from favorites
+            await favoritesCollection.deleteOne({ _id: existingFavorite._id });
+            revalidatePath('/recipes');
+            revalidatePath(`/recipes/${recipeId}`);
+            revalidatePath('/favorites');
+            return { success: true, isFavorited: false, message: 'Removed from favorites.' };
+        } else {
+            // Add to favorites
+            await favoritesCollection.insertOne({
+                userId: user.uid,
+                recipeId: new ObjectId(recipeId),
+                createdAt: new Date(),
+            });
+            revalidatePath('/recipes');
+            revalidatePath(`/recipes/${recipeId}`);
+            revalidatePath('/favorites');
+            return { success: true, isFavorited: true, message: 'Added to favorites!' };
+        }
+    } catch (e) {
+        console.error(e);
+        return { success: false, message: 'Failed to update favorites.' };
+    }
+}
+
+export async function getFavoriteRecipes(idToken: string | null) {
+  let user;
+  try {
+      user = await verifySession(idToken);
+  } catch (e) {
+      if (e instanceof Error) {
+          console.error(e.message);
+      }
+      return [];
+  }
+
+  try {
+      const client = await clientPromise;
+      const db = client.db();
+      const favorites = await db.collection('favorites').aggregate([
+          { $match: { userId: user.uid } },
+          { $sort: { createdAt: -1 } },
+          {
+              $lookup: {
+                  from: 'recipes',
+                  localField: 'recipeId',
+                  foreignField: '_id',
+                  as: 'recipeDetails'
+              }
+          },
+          { $unwind: '$recipeDetails' },
+          {
+              $replaceRoot: {
+                  newRoot: {
+                      $mergeObjects: [ "$recipeDetails", { isFavorited: true } ]
+                  }
+              }
+          }
+      ]).toArray();
+      
+      return JSON.parse(JSON.stringify(favorites)) as Recipe[];
+  } catch (e) {
+      console.error(e);
+      return [];
+  }
 }

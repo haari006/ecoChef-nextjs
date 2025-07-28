@@ -1,15 +1,35 @@
 import { getRecipe, getFeedbackForRecipe } from '@/app/actions';
 import { notFound } from 'next/navigation';
-import { Clock, Salad, UtensilsCrossed, ChefHat, Tags, Star, UserCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Clock, Salad, UtensilsCrossed, ChefHat, Tags, Star } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { FeedbackForm } from '@/components/feedback-form';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { FavoriteButton } from '@/components/favorite-button';
+import { auth } from '@/lib/firebase';
+import { getAdminAuth } from '@/lib/firebase-admin';
 
+async function getUserId() {
+  try {
+    // This is a workaround to get the current user on the server.
+    // In a real app, you might have a more robust session management system.
+    const user = auth.currentUser;
+    if (user) return user.uid;
+
+    // The below is not ideal and depends on how you handle auth state.
+    // It's a placeholder for a proper server-side session check.
+    const adminAuth = getAdminAuth();
+    // This part will likely fail without a token, which we don't have here.
+    // This demonstrates the need for a proper session management library.
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
 export default async function RecipePage({ params }: { params: { id: string } }) {
-  const recipe = await getRecipe(params.id);
+  const userId = await getUserId();
+  const recipe = await getRecipe(params.id, userId);
   const feedbackList = await getFeedbackForRecipe(params.id);
 
   if (!recipe) {
@@ -34,7 +54,10 @@ export default async function RecipePage({ params }: { params: { id: string } })
         </div>
         
         <header className="mb-8">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4">{recipe.recipeName}</h1>
+            <div className="flex justify-between items-start">
+                <h1 className="font-headline text-4xl md:text-5xl font-bold mb-4">{recipe.recipeName}</h1>
+                <FavoriteButton recipeId={recipe._id} isFavorited={!!recipe.isFavorited} />
+            </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-muted-foreground">
             {recipe.cookingTime && (
                 <div className="flex items-center gap-1.5">

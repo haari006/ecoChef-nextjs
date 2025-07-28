@@ -1,8 +1,20 @@
 import { getRecipes } from '@/app/actions';
+import { FavoriteButton } from '@/components/favorite-button';
 import { RecipeCard } from '@/components/recipe-card';
+import { auth } from '@/lib/firebase';
+
+async function getUserId() {
+    // This is a simplified way to get the user on the server.
+    // In a real-world app, you might use a more robust session management solution.
+    // Note: This only works if the server-side environment has access to the user's state.
+    // For server components, this can be tricky. A proper solution involves passing tokens
+    // or using a library that manages server-side sessions.
+    return auth.currentUser?.uid;
+}
 
 export default async function RecipesPage() {
-  const recipes = await getRecipes();
+  const userId = await getUserId();
+  const recipes = await getRecipes(userId);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Leaf, LogOut, UserCog, BookOpen } from 'lucide-react';
+import { Leaf, LogOut, UserCog, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { logout } from '@/app/(auth)/actions';
@@ -18,7 +18,7 @@ import { Skeleton } from './ui/skeleton';
 
 export default function Header() {
   const { user, loading } = useAuth();
-  const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID;
+  const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID?.trim();
   
   const handleLogout = async () => {
     await logout();
@@ -60,6 +60,12 @@ export default function Header() {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/favorites" className="cursor-pointer">
+                                <Heart className="mr-2 h-4 w-4" />
+                                <span>My Favorites</span>
+                            </Link>
+                        </DropdownMenuItem>
                         {isAdmin && (
                             <DropdownMenuItem asChild>
                                 <Link href="/admin" className="cursor-pointer">
