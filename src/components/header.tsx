@@ -15,13 +15,21 @@ import {
     DropdownMenuTrigger,
   } from '@/components/ui/dropdown-menu';
 import { Skeleton } from './ui/skeleton';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function Header() {
   const { user, loading } = useAuth();
   const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID?.trim();
   
   const handleLogout = async () => {
-    await logout();
+    try {
+      await signOut(auth);
+      // After client-side sign out, we can still call the server action to redirect
+      await logout();
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
   }
 
   return (

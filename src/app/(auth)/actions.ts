@@ -38,7 +38,11 @@ export async function createUserInDb(userData: {uid: string, name: string, email
 
 export async function logout() {
     try {
-      await signOut(auth);
+      // This is a server action, but signOut is a client-side function.
+      // This setup can be tricky. The redirect should happen regardless.
+      // However, for a clean logout, the client should handle signing out
+      // and then call a server action to redirect or just do it client-side.
+      // For now, let's ensure the redirect happens.
     } catch (error) {
       console.error('Error signing out: ', error);
     }
