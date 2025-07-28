@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState, useRef } from "react";
+import { useActionState, useEffect, useState, useRef, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { generateRecipeAction, type GenerateRecipeState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -242,7 +242,7 @@ export default function RecipeGenerator() {
   const [unconfirmedRecipes, setUnconfirmedRecipes] = useState<Recipe[] | null>(null);
   const [confirmedRecipes, setConfirmedRecipes] = useState<Recipe[] | null>(null);
   const [guestAttempts, setGuestAttempts] = useState(MAX_GUEST_ATTEMPTS);
-  const { pending } = useFormStatus();
+  const [isPending, startTransition] = useTransition();
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -265,7 +265,7 @@ export default function RecipeGenerator() {
         return;
     }
 
-    if (state.message && state.error && !pending && !state.validationError) {
+    if (state.message && state.error && !isPending && !state.validationError) {
       toast({
         variant: 'destructive',
         title: 'Oh no! Something went wrong.',
@@ -276,9 +276,11 @@ export default function RecipeGenerator() {
     }
     if (state.recipes && state.recipes.length > 0) {
       if (!user) {
-        const newAttemptCount = guestAttempts - 1;
-        setGuestAttempts(newAttemptCount);
-        localStorage.setItem('guestAttempts', newAttemptCount.toString());
+        setGuestAttempts((prev) => {
+          const newAttemptCount = prev - 1;
+          localStorage.setItem('guestAttempts', newAttemptCount.toString());
+          return newAttemptCount;
+        });
       }
       const anyMissing = state.recipes.some(r => r.missingIngredients && r.missingIngredients.length > 0);
       if (anyMissing) {
@@ -287,7 +289,7 @@ export default function RecipeGenerator() {
           setConfirmedRecipes(state.recipes);
       }
     }
-  }, [state, toast, pending, user, guestAttempts]);
+  }, [state, toast, isPending, user]);
 
   const handleRecipeConfirmation = () => {
     setConfirmedRecipes(unconfirmedRecipes);
@@ -309,13 +311,20 @@ export default function RecipeGenerator() {
         if (ingredientsTextarea) {
             ingredientsTextarea.value = newIngredients;
         }
+        startTransition(() => {
+            const newFormData = new FormData(formRef.current!);
+            newFormData.set('ingredients', newIngredients);
 
-        const newFormData = new FormData(formRef.current);
-        newFormData.set('ingredients', newIngredients);
-
-        formAction(newFormData);
+            formAction(newFormData);
+        });
         setUnconfirmedRecipes(null);
     }
+  }
+
+  const handleFormAction = (formData: FormData) => {
+    startTransition(() => {
+        formAction(formData);
+    })
   }
 
   const noMoreAttempts = !user && guestAttempts <= 0;
@@ -332,7 +341,7 @@ export default function RecipeGenerator() {
       </section>
 
       <Card className="max-w-4xl mx-auto shadow-lg">
-        <form ref={formRef} action={formAction}>
+        <form ref={formRef} action={handleFormAction}>
           <input type="hidden" name="idToken" value={idToken ?? ''} />
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Your Kitchen Pantry</CardTitle>
