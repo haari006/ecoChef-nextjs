@@ -1,17 +1,30 @@
+
 'use client';
 
 import { getRecipes } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { deleteRecipe } from '../actions';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { useFormStatus } from 'react-dom';
 
 function DeleteButton({ id }: { id: string }) {
+    const { pending } = useFormStatus();
+    
+    return (
+        <Button variant="ghost" size="icon" type="submit" disabled={pending}>
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            <span className="sr-only">Delete</span>
+        </Button>
+    );
+}
+
+function DeleteForm({ id }: { id: string }) {
     const { user } = useAuth();
     const [idToken, setIdToken] = useState<string | null>(null);
 
@@ -27,10 +40,7 @@ function DeleteButton({ id }: { id: string }) {
     
     return (
         <form action={deleteActionWithToken}>
-            <Button variant="ghost" size="icon" type="submit" disabled={!idToken}>
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">Delete</span>
-            </Button>
+            <DeleteButton id={id} />
         </form>
     );
 }
@@ -88,7 +98,7 @@ export default function AdminRecipesPage() {
                                             <span className="sr-only">Edit</span>
                                         </Link>
                                     </Button>
-                                    <DeleteButton id={recipe._id} />
+                                    <DeleteForm id={recipe._id} />
                                 </div>
                             </TableCell>
                         </TableRow>

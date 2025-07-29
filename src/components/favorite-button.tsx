@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { toggleFavoriteAction } from '@/app/actions';
@@ -42,19 +43,18 @@ export function FavoriteButton({ recipeId, isFavorited }: { recipeId: string; is
             description: result.message,
             variant: 'destructive',
           });
-        } else {
-            // Optional: show a success toast
-            // toast({
-            //     title: 'Success',
-            //     description: result.message,
-            // });
         }
-        // Instead of router.refresh(), revalidation should handle updates.
-        // If specific components aren't updating, this might be needed.
-        // router.refresh();
       });
     });
   };
+
+  if (isPending) {
+    return (
+        <Button variant="ghost" size="icon" className="rounded-full" disabled>
+            <Loader2 className="h-5 w-5 animate-spin" />
+        </Button>
+    )
+  }
 
   if (!user) {
     return (
