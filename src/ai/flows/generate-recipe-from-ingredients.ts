@@ -56,6 +56,10 @@ export async function generateRecipeFromIngredients(
 
 const localizationContext = `
 region,preferred_ingredient,style,dish_type
+Malaysia,"coconut milk, lemongrass, chili",Malay,Curry/Stir-fry
+Thailand,"fish sauce, lime, chili",Thai,Curry/Salad
+Vietnam,"fish sauce, herbs, rice noodles",Vietnamese,Pho
+Sichuan,"sichuan peppercorns, chili bean paste, garlic",Chinese,Stir-fry
 Tuscany,"olive oil, tomatoes, basil",Italian,Pasta
 Provence,"lavender, garlic, olives",French,Seafood
 Kyoto,"miso, tofu, seaweed",Japanese,Noodle Soup
@@ -69,7 +73,7 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   output: {schema: GenerateRecipeFromIngredientsOutputSchema},
   prompt: `You are a recipe creation expert. Given a list of ingredients, dietary restrictions, and cooking time preferences, you will generate three distinct and detailed recipes.
 
-  Use the following CSV data as context for creating personalized or localized recipes. If the user's ingredients suggest a certain cuisine, lean into that style.
+  Use the following CSV data as context for creating personalized or localized recipes. You should give priority to Malaysian and other Asian cuisines.
   
   Contextual Data:
   \`\`\`csv
