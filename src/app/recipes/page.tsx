@@ -1,5 +1,5 @@
+
 import { getRecipes } from '@/app/actions';
-import { FavoriteButton } from '@/components/favorite-button';
 import { RecipeCard } from '@/components/recipe-card';
 import { auth } from '@/lib/firebase';
 

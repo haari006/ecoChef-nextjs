@@ -63,8 +63,6 @@ export async function generateRecipeAction(
     isDialogFlow: formData.get("isDialogFlow"),
   });
 
-  console.error("Validation Error:", validatedFields.error);
-
   if (!validatedFields.success) {
     const flatErrors = validatedFields.error.flatten().fieldErrors;
     const firstError =

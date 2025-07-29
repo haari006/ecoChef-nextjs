@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,14 +10,12 @@ import Link from 'next/link';
 
 export default function FavoritesPage() {
     const { user, loading: authLoading } = useAuth();
-    const [idToken, setIdToken] = useState<string | null>(null);
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (user) {
             user.getIdToken().then(token => {
-                setIdToken(token);
                 getFavoriteRecipes(token).then(data => {
                     setRecipes(data);
                     setLoading(false);

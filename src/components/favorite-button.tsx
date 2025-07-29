@@ -7,14 +7,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { toggleFavoriteAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 
 export function FavoriteButton({ recipeId, isFavorited }: { recipeId: string; isFavorited: boolean }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [optimisticFavorited, setOptimisticFavorited] = useState(isFavorited);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
 
   useEffect(() => {
     setOptimisticFavorited(isFavorited);
