@@ -65,19 +65,19 @@ const MAX_GUEST_ATTEMPTS = 3;
 
 function SubmitButton({
   disabled,
-  isPending,
 }: {
   disabled?: boolean;
-  isPending: boolean;
 }) {
+  const { pending } = useActionState(generateRecipeAction, initialState)
+
   return (
     <Button
       type="submit"
-      disabled={isPending || disabled}
+      disabled={pending || disabled}
       className="w-full sm:w-auto"
       size="lg"
     >
-      {isPending ? (
+      {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Generating...
@@ -209,10 +209,11 @@ function MissingIngredientsDialog({
   onConfirm: (selectedIngredients: string[]) => void;
   onCancel: () => void;
 }) {
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  
   const allMissingIngredients = [
     ...new Set(recipes.flatMap((r) => r.missingIngredients || [])),
   ];
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Initialize state with all ingredients selected
@@ -291,6 +292,7 @@ export default function RecipeGenerator() {
   const [idToken, setIdToken] = useState<string | null>(null);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [showMissingIngredientsDialog, setShowMissingIngredientsDialog] =
     useState(false);
   const [recipesForDialog, setRecipesForDialog] = useState<Recipe[] | null>(
@@ -340,6 +342,13 @@ export default function RecipeGenerator() {
         setRecipesForDialog(state.recipes as Recipe[]);
         setShowMissingIngredientsDialog(true);
       } else {
+        toast({
+            title: "Recipes Generated!",
+            description: "Scroll down to see your delicious new recipes.",
+        });
+        setTimeout(() => {
+            resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
         setShowMissingIngredientsDialog(false);
         setRecipesForDialog(null);
       }
@@ -405,6 +414,7 @@ export default function RecipeGenerator() {
                 placeholder="e.g., chicken breast, broccoli, garlic, olive oil"
                 required
                 rows={4}
+                disabled={isPending}
               />
               {state?.message && state.error && !state.validationError && (
                 <p className="text-sm font-medium text-destructive">
@@ -415,7 +425,7 @@ export default function RecipeGenerator() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="dietaryRestrictions">Dietary Needs</Label>
-                <Select name="dietaryRestrictions" defaultValue="none">
+                <Select name="dietaryRestrictions" defaultValue="none" disabled={isPending}>
                   <SelectTrigger id="dietaryRestrictions">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
@@ -430,7 +440,7 @@ export default function RecipeGenerator() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="cookingTime">Cooking Time</Label>
-                <Select name="cookingTime" defaultValue="any">
+                <Select name="cookingTime" defaultValue="any" disabled={isPending}>
                   <SelectTrigger id="cookingTime">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
@@ -472,7 +482,24 @@ export default function RecipeGenerator() {
                 )}
               </div>
             )}
-            <SubmitButton disabled={noMoreAttempts} isPending={isPending} />
+            <Button
+                type="submit"
+                disabled={isPending || noMoreAttempts}
+                className="w-full sm:w-auto"
+                size="lg"
+            >
+                {isPending ? (
+                    <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                    </>
+                ) : (
+                    <>
+                    <ChefHat className="mr-2 h-4 w-4" />
+                    Generate Recipes
+                    </>
+                )}
+            </Button>
           </CardFooter>
         </form>
       </Card>
@@ -484,12 +511,12 @@ export default function RecipeGenerator() {
           onCancel={handleRecipeCancellation}
         />
       )}
-
-      {state.recipes && !isPending && !showMissingIngredientsDialog && (
-        <RecipeDisplay recipes={state.recipes as Recipe[]} />
-      )}
+      
+      <div ref={resultsRef}>
+        {state.recipes && !isPending && !showMissingIngredientsDialog && (
+            <RecipeDisplay recipes={state.recipes as Recipe[]} />
+        )}
+      </div>
     </div>
   );
 }
-
-    
