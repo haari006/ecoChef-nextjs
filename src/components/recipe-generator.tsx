@@ -8,7 +8,6 @@ import {
   useRef,
   useTransition,
 } from "react";
-import { useFormStatus } from "react-dom";
 import { generateRecipeAction, type GenerateRecipeState } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,16 +63,21 @@ const initialState: GenerateRecipeState = {
 
 const MAX_GUEST_ATTEMPTS = 3;
 
-function SubmitButton({ disabled }: { disabled?: boolean }) {
-  const { pending } = useFormStatus();
+function SubmitButton({
+  disabled,
+  isPending,
+}: {
+  disabled?: boolean;
+  isPending: boolean;
+}) {
   return (
     <Button
       type="submit"
-      disabled={pending || disabled}
+      disabled={isPending || disabled}
       className="w-full sm:w-auto"
       size="lg"
     >
-      {pending ? (
+      {isPending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Generating...
@@ -217,7 +221,7 @@ function MissingIngredientsDialog({
         allMissingIngredients.reduce((acc, i) => ({ ...acc, [i]: true }), {})
       );
     }
-  }, []); // Only run once when the dialog mounts with new recipes
+  }, [recipes]); // Rerun when recipes change
 
   const handleCheckboxChange = (ingredient: string, checked: boolean) => {
     setSelected((prev) => ({ ...prev, [ingredient]: checked }));
@@ -293,11 +297,12 @@ export default function RecipeGenerator() {
     null
   );
   const [guestAttempts, setGuestAttempts] = useState(MAX_GUEST_ATTEMPTS);
-  const [
-    state,
-    formAction,
-  ] = useActionState(generateRecipeAction, initialState);
-  const { pending } = useFormStatus();
+  const [isPending, startTransition] = useTransition();
+
+  const [state, formAction] = useActionState(generateRecipeAction, {
+    ...initialState,
+    isDialogFlow: true,
+  });
 
   useEffect(() => {
     if (user) {
@@ -311,15 +316,15 @@ export default function RecipeGenerator() {
 
   useEffect(() => {
     if (state.message && state.error) {
-        toast({
-            variant: 'destructive',
-            title: 'Oh no! Something went wrong.',
-            description: state.message,
-        });
+      toast({
+        variant: "destructive",
+        title: "Oh no! Something went wrong.",
+        description: state.message,
+      });
     }
 
     if (state.recipes && state.recipes.length > 0) {
-      if (!user && state.recipes) {
+      if (!user) {
         setGuestAttempts((prev) => {
           const newAttemptCount = prev - 1;
           localStorage.setItem("guestAttempts", newAttemptCount.toString());
@@ -330,10 +335,8 @@ export default function RecipeGenerator() {
       const allMissingIngredients = [
         ...new Set(state.recipes.flatMap((r) => r.missingIngredients || [])),
       ];
-      
-      const isDialogFlow = state.isDialogFlow !== false;
 
-      if (allMissingIngredients.length > 0 && isDialogFlow) {
+      if (allMissingIngredients.length > 0 && state.isDialogFlow) {
         setRecipesForDialog(state.recipes as Recipe[]);
         setShowMissingIngredientsDialog(true);
       } else {
@@ -345,24 +348,26 @@ export default function RecipeGenerator() {
 
   const handleFormSubmit = (formData: FormData) => {
     formData.set("idToken", idToken ?? "");
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   };
-  
+
   const handleRecipeCancellation = () => {
     setShowMissingIngredientsDialog(false);
   };
 
   const handleRegenerateWithSelection = (selectedIngredients: string[]) => {
     if (formRef.current) {
-        const formData = new FormData(formRef.current);
-        const originalIngredients = formData.get('ingredients') as string || '';
-        
-        const newIngredients = [originalIngredients, ...selectedIngredients].filter(Boolean).join(', ');
-        
-        formData.set('ingredients', newIngredients);
-        formData.set('isDialogFlow', 'false'); // Mark as non-dialog run
-        
-        handleFormSubmit(formData);
+      const formData = new FormData(formRef.current);
+      const originalIngredients = (formData.get("ingredients") as string) || "";
+      const newIngredients = [originalIngredients, ...selectedIngredients]
+        .filter(Boolean)
+        .join(", ");
+      formData.set("ingredients", newIngredients);
+      formData.set("isDialogFlow", "false");
+      setShowMissingIngredientsDialog(false);
+      handleFormSubmit(formData);
     }
   };
 
@@ -410,10 +415,7 @@ export default function RecipeGenerator() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="dietaryRestrictions">Dietary Needs</Label>
-                <Select
-                  name="dietaryRestrictions"
-                  defaultValue="none"
-                >
+                <Select name="dietaryRestrictions" defaultValue="none">
                   <SelectTrigger id="dietaryRestrictions">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
@@ -428,10 +430,7 @@ export default function RecipeGenerator() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="cookingTime">Cooking Time</Label>
-                <Select
-                  name="cookingTime"
-                  defaultValue="any"
-                >
+                <Select name="cookingTime" defaultValue="any">
                   <SelectTrigger id="cookingTime">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
@@ -444,11 +443,11 @@ export default function RecipeGenerator() {
                 </Select>
               </div>
             </div>
-             {state.validationError && (
-                <div className="flex items-center gap-2 text-destructive-foreground bg-destructive p-3 rounded-md">
-                    <AlertTriangle className="h-5 w-5" />
-                    <p className="text-sm font-medium">{state.validationError}</p>
-                </div>
+            {state.validationError && (
+              <div className="flex items-center gap-2 text-destructive-foreground bg-destructive p-3 rounded-md">
+                <AlertTriangle className="h-5 w-5" />
+                <p className="text-sm font-medium">{state.validationError}</p>
+              </div>
             )}
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-4">
@@ -473,7 +472,7 @@ export default function RecipeGenerator() {
                 )}
               </div>
             )}
-            <SubmitButton disabled={noMoreAttempts || pending} />
+            <SubmitButton disabled={noMoreAttempts} isPending={isPending} />
           </CardFooter>
         </form>
       </Card>
@@ -486,9 +485,11 @@ export default function RecipeGenerator() {
         />
       )}
 
-      {state.recipes && !pending && !showMissingIngredientsDialog && (
+      {state.recipes && !isPending && !showMissingIngredientsDialog && (
         <RecipeDisplay recipes={state.recipes as Recipe[]} />
       )}
     </div>
   );
 }
+
+    
