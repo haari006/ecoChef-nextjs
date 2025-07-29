@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -296,10 +297,11 @@ export default function RecipeGenerator() {
     dietaryRestrictions: "none",
     cookingTime: "any",
   });
-  const [state, formAction, isPending] = useActionState(
+  const [state, formAction] = useActionState(
     generateRecipeAction,
     initialState
   );
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (user) {
@@ -351,8 +353,7 @@ export default function RecipeGenerator() {
     }
   }, [state, toast, user, isPending]);
 
-  const handleFormAction = async (formData: FormData) => {
-    // Store form values before submission
+  const handleFormAction = (formData: FormData) => {
     setFormValues({
       ingredients: (formData.get("ingredients") as string) || "",
       dietaryRestrictions:
@@ -362,11 +363,12 @@ export default function RecipeGenerator() {
 
     formData.set("idToken", idToken ?? "");
 
-    // Don't reset recipes immediately - let the useEffect handle it
     setValidationError(null);
     setShowMissingIngredientsDialog(false);
 
-    formAction(formData);
+    startTransition(() => {
+        formAction(formData);
+    });
   };
 
   const handleRecipeCancellation = () => {
@@ -385,7 +387,6 @@ export default function RecipeGenerator() {
       formData.set("ingredients", newIngredients);
       formData.set("isDialogFlow", "false"); // Mark as non-dialog run
 
-      // Update form values to reflect the new ingredients
       setFormValues((prev) => ({
         ...prev,
         ingredients: newIngredients,
@@ -545,9 +546,11 @@ export default function RecipeGenerator() {
         />
       )}
 
-      {!isPending && recipes && !showMissingIngredientsDialog && (
-        <RecipeDisplay recipes={recipes} />
+      {state.recipes && !isPending && !showMissingIngredientsDialog && (
+        <RecipeDisplay recipes={state.recipes as Recipe[]} />
       )}
     </div>
   );
 }
+
+    
