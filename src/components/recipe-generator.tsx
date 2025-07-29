@@ -8,7 +8,7 @@ import {
   useRef,
   useTransition,
 } from "react";
-import { generateRecipeAction, type GenerateRecipeState } from "@/app/actions";
+import { generateRecipeAction, type GenerateRecipeState, saveRecipe } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,8 +37,9 @@ import {
   Tags,
   Info,
   AlertTriangle,
+  Heart,
 } from "lucide-react";
-import type { GenerateRecipeFromIngredientsOutput } from "@/ai/flows/generate-recipe-from-ingredients";
+import type { Recipe } from "@/app/actions";
 import { FeedbackForm } from "@/components/feedback-form";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -63,56 +64,66 @@ const initialState: GenerateRecipeState = {
 
 const MAX_GUEST_ATTEMPTS = 3;
 
-function SubmitButton({
-  disabled,
-}: {
-  disabled?: boolean;
-}) {
-  const { pending } = useActionState(generateRecipeAction, initialState)
-
-  return (
-    <Button
-      type="submit"
-      disabled={pending || disabled}
-      className="w-full sm:w-auto"
-      size="lg"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Generating...
-        </>
-      ) : (
-        <>
-          <ChefHat className="mr-2 h-4 w-4" />
-          Generate Recipes
-        </>
-      )}
-    </Button>
-  );
-}
-
-type Recipe = GenerateRecipeFromIngredientsOutput["recipes"][0] & {
-  _id: string;
-};
-
-function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
+function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
+  const [recipes, setRecipes] = useState(initialRecipes);
   const [activeRecipe, setActiveRecipe] = useState<Recipe>(recipes[0]);
+  const [isPending, startTransition] = useTransition();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setActiveRecipe(recipes[0]);
+  }, [recipes]);
+
+
+  const handleFavorite = (recipeToSave: Recipe) => {
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'You must be logged in to save recipes.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    startTransition(async () => {
+        const idToken = await user.getIdToken();
+        const result = await saveRecipe(idToken, recipeToSave);
+        if (result.success && result.recipeId) {
+            toast({
+                title: 'Success!',
+                description: result.message,
+                variant: 'success'
+            });
+            // Update the recipe in the local state with its new ID and favorited status
+            setRecipes(currentRecipes => currentRecipes.map(r => 
+                r.recipeName === recipeToSave.recipeName 
+                ? { ...r, _id: result.recipeId, isFavorited: true }
+                : r
+            ));
+        } else {
+            toast({
+                title: 'Error',
+                description: result.message,
+                variant: 'destructive'
+            });
+        }
+    });
+  }
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in-50 duration-500">
       <Tabs
-        defaultValue={recipes[0]._id}
+        defaultValue={recipes[0].recipeName}
         className="w-full"
-        onValueChange={(id) =>
-          setActiveRecipe(recipes.find((r) => r._id === id)!)
+        onValueChange={(name) =>
+          setActiveRecipe(recipes.find((r) => r.recipeName === name)!)
         }
       >
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-4 h-auto">
           {recipes.map((recipe) => (
             <TabsTrigger
-              key={recipe._id}
-              value={recipe._id}
+              key={recipe.recipeName}
+              value={recipe.recipeName}
               className="py-2.5 text-center truncate"
             >
               {recipe.recipeName}
@@ -120,31 +131,53 @@ function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
           ))}
         </TabsList>
         {recipes.map((recipe) => (
-          <TabsContent key={recipe._id} value={recipe._id}>
+          <TabsContent key={recipe.recipeName} value={recipe.recipeName}>
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="font-headline text-3xl">
-                  {recipe.recipeName}
-                </CardTitle>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground pt-2">
-                  {recipe.cookingTime && (
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4" />
-                      <span>{recipe.cookingTime}</span>
+                  <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="font-headline text-3xl">
+                        {recipe.recipeName}
+                        </CardTitle>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground pt-2">
+                        {recipe.cookingTime && (
+                            <div className="flex items-center gap-1.5">
+                            <Clock className="w-4 h-4" />
+                            <span>{recipe.cookingTime}</span>
+                            </div>
+                        )}
+                        {recipe.dietaryInformation && (
+                            <div className="flex items-center gap-1.5">
+                            <Salad className="w-4 h-4" />
+                            <span>{recipe.dietaryInformation}</span>
+                            </div>
+                        )}
+                        {recipe.tags && recipe.tags.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                            <Tags className="w-4 h-4" />
+                            <span>{recipe.tags.join(", ")}</span>
+                            </div>
+                        )}
+                        </div>
                     </div>
-                  )}
-                  {recipe.dietaryInformation && (
-                    <div className="flex items-center gap-1.5">
-                      <Salad className="w-4 h-4" />
-                      <span>{recipe.dietaryInformation}</span>
-                    </div>
-                  )}
-                  {recipe.tags && recipe.tags.length > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Tags className="w-4 h-4" />
-                      <span>{recipe.tags.join(", ")}</span>
-                    </div>
-                  )}
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full group"
+                        onClick={() => handleFavorite(recipe)}
+                        disabled={isPending || !!recipe.isFavorited}
+                    >
+                        {isPending && !recipe.isFavorited ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                            <Heart
+                                className={`h-5 w-5 transition-all duration-200 group-hover:scale-110 ${
+                                    recipe.isFavorited ? 'text-red-500 fill-red-500' : 'text-muted-foreground/80'
+                                }`}
+                            />
+                        )}
+                        <span className="sr-only">{recipe.isFavorited ? 'Favorited' : 'Add to favorites'}</span>
+                    </Button>
                 </div>
               </CardHeader>
               <CardContent className="grid md:grid-cols-3 gap-8">
@@ -172,30 +205,30 @@ function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
                   </ol>
                 </div>
               </CardContent>
+              {activeRecipe._id && (
+                <>
+                <CardFooter>
+                  Enjoyed this recipe? Give it a rating!
+                </CardFooter>
+                 <CardContent>
+                    <FeedbackForm recipeId={activeRecipe._id} />
+                </CardContent>
+                <CardFooter className="flex-col gap-2">
+                    <p className="text-sm text-muted-foreground">
+                        Or view all feedback for this recipe:
+                    </p>
+                    <Button variant="link" asChild>
+                        <Link href={`/recipes/${activeRecipe._id}`}>
+                        View Full Recipe Page
+                        </Link>
+                    </Button>
+                </CardFooter>
+                </>
+              )}
             </Card>
           </TabsContent>
         ))}
       </Tabs>
-      <Card className="mt-8">
-        <CardHeader>
-          <h3 className="font-bold font-headline text-xl text-center">
-            Enjoyed this recipe?
-          </h3>
-        </CardHeader>
-        <CardContent>
-          <FeedbackForm recipeId={activeRecipe._id} />
-        </CardContent>
-        <CardFooter className="flex-col gap-2">
-          <p className="text-sm text-muted-foreground">
-            Or view all feedback for this recipe:
-          </p>
-          <Button variant="link" asChild>
-            <Link href={`/recipes/${activeRecipe._id}`}>
-              View Full Recipe Page
-            </Link>
-          </Button>
-        </CardFooter>
-      </Card>
     </div>
   );
 }
@@ -339,10 +372,11 @@ export default function RecipeGenerator() {
       ];
 
       if (allMissingIngredients.length > 0 && state.isDialogFlow) {
-        setRecipesForDialog(state.recipes as Recipe[]);
+        setRecipesForDialog(state.recipes);
         setShowMissingIngredientsDialog(true);
       } else {
         toast({
+            variant: "success",
             title: "Recipes Generated!",
             description: "Scroll down to see your delicious new recipes.",
         });
@@ -354,11 +388,11 @@ export default function RecipeGenerator() {
       }
     }
   }, [state, toast, user]);
-
+  
   const handleFormSubmit = (formData: FormData) => {
     formData.set("idToken", idToken ?? "");
     startTransition(() => {
-      formAction(formData);
+        formAction(formData);
     });
   };
 
@@ -514,7 +548,7 @@ export default function RecipeGenerator() {
       
       <div ref={resultsRef}>
         {state.recipes && !isPending && !showMissingIngredientsDialog && (
-            <RecipeDisplay recipes={state.recipes as Recipe[]} />
+            <RecipeDisplay recipes={state.recipes} />
         )}
       </div>
     </div>

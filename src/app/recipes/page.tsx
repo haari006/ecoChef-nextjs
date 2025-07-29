@@ -2,6 +2,8 @@
 import { getRecipes } from '@/app/actions';
 import { RecipeCard } from '@/components/recipe-card';
 import { auth } from '@/lib/firebase';
+import { verifySession } from '@/lib/server-auth';
+
 
 async function getUserId() {
     // This is a simplified way to get the user on the server.

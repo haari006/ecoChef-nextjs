@@ -2,7 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getFavoriteRecipes, type Recipe } from '@/app/actions';
+import { getFavoriteRecipes } from '@/app/actions';
+import type { Recipe } from '@/app/actions';
 import { RecipeCard } from '@/components/recipe-card';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2, HeartCrack } from 'lucide-react';
@@ -10,7 +11,7 @@ import Link from 'next/link';
 
 export default function FavoritesPage() {
     const { user, loading: authLoading } = useAuth();
-    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [recipes, setRecipes] = useState<(Recipe & { _id: string })[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

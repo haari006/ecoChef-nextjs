@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { FavoriteButton } from './favorite-button';
 
 type RecipeCardProps = {
-  recipe: Recipe;
+  recipe: Recipe & { _id: string };
 };
 
 export function RecipeCard({ recipe }: RecipeCardProps) {

@@ -23,7 +23,7 @@ const recipeSchema = z.object({
 
 // Define the shape of a single recipe for use in the state
 export type Recipe = GenerateRecipeFromIngredientsOutput["recipes"][0] & {
-  _id: string;
+  _id?: string;
   isFavorited?: boolean;
 };
 
@@ -118,27 +118,8 @@ export async function generateRecipeAction(
       };
     }
 
-    const recipesToInsert = generationResult.recipes.map((recipe) => ({
-      ...recipe,
-      userId: user?.uid ?? "guest", // Mark guest recipes
-      createdAt: new Date(),
-    }));
-
-    const client = await clientPromise;
-    const db = client.db();
-    const result = await db.collection("recipes").insertMany(recipesToInsert);
-
-    revalidatePath("/recipes");
-
-    const insertedRecipes = Object.values(result.insertedIds).map(
-      (id, index) => ({
-        ...generationResult.recipes[index],
-        _id: id.toString(),
-      })
-    );
-
     return {
-      recipes: insertedRecipes,
+      recipes: generationResult.recipes,
       message: "Recipes generated successfully!",
       error: false,
       isDialogFlow: isDialogFlow,
@@ -234,7 +215,7 @@ export async function getRecipes(userId?: string | null) {
           });
       }
       
-      return JSON.parse(JSON.stringify(recipes)) as Recipe[];
+      return JSON.parse(JSON.stringify(recipes)) as (Recipe & { _id: string })[];
   } catch (e) {
       console.error(e);
       return [];
@@ -256,7 +237,7 @@ export async function getRecipe(id: string, userId?: string | null) {
           const favorite = await db.collection('favorites').findOne({ userId, recipeId: new ObjectId(id) });
           (recipe as any).isFavorited = !!favorite;
       }
-      return JSON.parse(JSON.stringify(recipe)) as Recipe;
+      return JSON.parse(JSON.stringify(recipe)) as (Recipe & { _id: string });
   } catch (e) {
       console.error(e);
       return null;
@@ -276,7 +257,7 @@ export async function getFeedbackForRecipe(recipeId: string) {
     }
 }
 
-// Action to toggle favorite status
+// Action to toggle favorite status for an existing recipe
 export async function toggleFavoriteAction(idToken: string | null, recipeId: string) {
     let user;
     if (!idToken) {
@@ -330,6 +311,69 @@ export async function toggleFavoriteAction(idToken: string | null, recipeId: str
     }
 }
 
+// Action to save a newly generated recipe and favorite it
+const recipeToSaveSchema = z.object({
+    recipeName: z.string(),
+    ingredients: z.array(z.string()),
+    instructions: z.array(z.string()),
+    cookingTime: z.string(),
+    dietaryInformation: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+  });
+  
+export async function saveRecipe(idToken: string | null, recipe: Recipe) {
+    let user;
+    if (!idToken) {
+        return { success: false, message: 'You must be logged in to save recipes.' };
+    }
+    try {
+        user = await verifySession(idToken);
+    } catch (e) {
+        if (e instanceof Error) {
+            return { success: false, message: e.message };
+        }
+        return { success: false, message: 'An unknown authentication error occurred.' };
+    }
+
+    const validatedRecipe = recipeToSaveSchema.safeParse(recipe);
+
+    if (!validatedRecipe.success) {
+        return { success: false, message: 'Invalid recipe data.' };
+    }
+
+    try {
+        const client = await clientPromise;
+        const db = client.db();
+        const recipesCollection = db.collection('recipes');
+        const favoritesCollection = db.collection('favorites');
+
+        // 1. Insert the new recipe
+        const recipeToInsert = {
+            ...validatedRecipe.data,
+            userId: user.uid,
+            createdAt: new Date(),
+        };
+        const insertResult = await recipesCollection.insertOne(recipeToInsert);
+        const newRecipeId = insertResult.insertedId;
+
+        // 2. Add to favorites
+        await favoritesCollection.insertOne({
+            userId: user.uid,
+            recipeId: newRecipeId,
+            createdAt: new Date(),
+        });
+        
+        revalidatePath('/recipes');
+        revalidatePath('/favorites');
+
+        return { success: true, message: 'Recipe saved to your favorites!', recipeId: newRecipeId.toString() };
+    } catch (e) {
+        console.error(e);
+        return { success: false, message: 'Failed to save recipe.' };
+    }
+}
+
+
 export async function getFavoriteRecipes(idToken: string | null) {
   let user;
   if (!idToken) {
@@ -368,7 +412,7 @@ export async function getFavoriteRecipes(idToken: string | null) {
           }
       ]).toArray();
       
-      return JSON.parse(JSON.stringify(favorites)) as Recipe[];
+      return JSON.parse(JSON.stringify(favorites)) as (Recipe & { _id: string })[];
   } catch (e) {
       console.error(e);
       return [];
