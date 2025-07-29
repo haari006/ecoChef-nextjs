@@ -1,10 +1,15 @@
+"use client";
 
-'use client';
-
-import { useActionState, useEffect, useState, useRef, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useState,
+  useRef,
+  useTransition,
+} from "react";
 import { useFormStatus } from "react-dom";
-import { generateRecipeAction, type GenerateRecipeState } from '@/app/actions';
-import { Button } from '@/components/ui/button';
+import { generateRecipeAction, type GenerateRecipeState } from "@/app/actions";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,24 +17,42 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { ChefHat, Clock, UtensilsCrossed, Loader2, Salad, Tags, Info, AlertTriangle } from 'lucide-react';
-import type { GenerateRecipeFromIngredientsOutput } from '@/ai/flows/generate-recipe-from-ingredients';
-import { FeedbackForm } from '@/components/feedback-form';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import {
+  ChefHat,
+  Clock,
+  UtensilsCrossed,
+  Loader2,
+  Salad,
+  Tags,
+  Info,
+  AlertTriangle,
+} from "lucide-react";
+import type { GenerateRecipeFromIngredientsOutput } from "@/ai/flows/generate-recipe-from-ingredients";
+import { FeedbackForm } from "@/components/feedback-form";
+import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import { Checkbox } from "./ui/checkbox";
 
 const initialState: GenerateRecipeState = {
@@ -43,7 +66,12 @@ const MAX_GUEST_ATTEMPTS = 3;
 function SubmitButton({ disabled }: { disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending || disabled} className="w-full sm:w-auto" size="lg">
+    <Button
+      type="submit"
+      disabled={pending || disabled}
+      className="w-full sm:w-auto"
+      size="lg"
+    >
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -59,83 +87,112 @@ function SubmitButton({ disabled }: { disabled?: boolean }) {
   );
 }
 
-type Recipe = GenerateRecipeFromIngredientsOutput['recipes'][0] & { _id: string };
+type Recipe = GenerateRecipeFromIngredientsOutput["recipes"][0] & {
+  _id: string;
+};
 
 function RecipeDisplay({ recipes }: { recipes: Recipe[] }) {
   const [activeRecipe, setActiveRecipe] = useState<Recipe>(recipes[0]);
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in-50 duration-500">
-      <Tabs defaultValue={recipes[0]._id} className="w-full" onValueChange={(id) => setActiveRecipe(recipes.find(r => r._id === id)!)}>
+      <Tabs
+        defaultValue={recipes[0]._id}
+        className="w-full"
+        onValueChange={(id) =>
+          setActiveRecipe(recipes.find((r) => r._id === id)!)
+        }
+      >
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-4 h-auto">
           {recipes.map((recipe) => (
-            <TabsTrigger key={recipe._id} value={recipe._id} className="py-2.5 text-center truncate">{recipe.recipeName}</TabsTrigger>
+            <TabsTrigger
+              key={recipe._id}
+              value={recipe._id}
+              className="py-2.5 text-center truncate"
+            >
+              {recipe.recipeName}
+            </TabsTrigger>
           ))}
         </TabsList>
         {recipes.map((recipe) => (
-            <TabsContent key={recipe._id} value={recipe._id}>
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-3xl">{recipe.recipeName}</CardTitle>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground pt-2">
-                            {recipe.cookingTime && (
-                                <div className="flex items-center gap-1.5">
-                                    <Clock className="w-4 h-4" />
-                                    <span>{recipe.cookingTime}</span>
-                                </div>
-                            )}
-                            {recipe.dietaryInformation && (
-                                <div className="flex items-center gap-1.5">
-                                    <Salad className="w-4 h-4" />
-                                    <span>{recipe.dietaryInformation}</span>
-                                </div>
-                            )}
-                            {recipe.tags && recipe.tags.length > 0 && (
-                                <div className="flex items-center gap-1.5">
-                                    <Tags className="w-4 h-4" />
-                                    <span>{recipe.tags.join(', ')}</span>
-                                </div>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="grid md:grid-cols-3 gap-8">
-                        <div className="md:col-span-1">
-                        <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2"><UtensilsCrossed className="w-5 h-5 text-primary"/> Ingredients</h3>
-                        <ul className="space-y-2 list-disc list-inside text-foreground/80">
-                            {recipe.ingredients.map((item, index) => (
-                            <li key={index}>{item}</li>
-                            ))}
-                        </ul>
-                        </div>
-                        <div className="md:col-span-2">
-                        <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2"><ChefHat className="w-5 h-5 text-primary"/> Instructions</h3>
-                        <ol className="space-y-4 list-decimal list-inside">
-                            {recipe.instructions.map((step, index) => (
-                            <li key={index} className="pl-2">{step}</li>
-                            ))}
-                        </ol>
-                        </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
+          <TabsContent key={recipe._id} value={recipe._id}>
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="font-headline text-3xl">
+                  {recipe.recipeName}
+                </CardTitle>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground pt-2">
+                  {recipe.cookingTime && (
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      <span>{recipe.cookingTime}</span>
+                    </div>
+                  )}
+                  {recipe.dietaryInformation && (
+                    <div className="flex items-center gap-1.5">
+                      <Salad className="w-4 h-4" />
+                      <span>{recipe.dietaryInformation}</span>
+                    </div>
+                  )}
+                  {recipe.tags && recipe.tags.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <Tags className="w-4 h-4" />
+                      <span>{recipe.tags.join(", ")}</span>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-3 gap-8">
+                <div className="md:col-span-1">
+                  <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2">
+                    <UtensilsCrossed className="w-5 h-5 text-primary" />{" "}
+                    Ingredients
+                  </h3>
+                  <ul className="space-y-2 list-disc list-inside text-foreground/80">
+                    {recipe.ingredients.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="md:col-span-2">
+                  <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2">
+                    <ChefHat className="w-5 h-5 text-primary" /> Instructions
+                  </h3>
+                  <ol className="space-y-4 list-decimal list-inside">
+                    {recipe.instructions.map((step, index) => (
+                      <li key={index} className="pl-2">
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         ))}
       </Tabs>
       <Card className="mt-8">
         <CardHeader>
-            <h3 className="font-bold font-headline text-xl text-center">Enjoyed this recipe?</h3>
+          <h3 className="font-bold font-headline text-xl text-center">
+            Enjoyed this recipe?
+          </h3>
         </CardHeader>
         <CardContent>
-            <FeedbackForm recipeId={activeRecipe._id} />
+          <FeedbackForm recipeId={activeRecipe._id} />
         </CardContent>
-        <CardFooter className='flex-col gap-2'>
-            <p className="text-sm text-muted-foreground">Or view all feedback for this recipe:</p>
-            <Button variant="link" asChild>
-                <Link href={`/recipes/${activeRecipe._id}`}>View Full Recipe Page</Link>
-            </Button>
+        <CardFooter className="flex-col gap-2">
+          <p className="text-sm text-muted-foreground">
+            Or view all feedback for this recipe:
+          </p>
+          <Button variant="link" asChild>
+            <Link href={`/recipes/${activeRecipe._id}`}>
+              View Full Recipe Page
+            </Link>
+          </Button>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
 
 function MissingIngredientsDialog({
@@ -155,10 +212,11 @@ function MissingIngredientsDialog({
   useEffect(() => {
     // Initialize state with all ingredients selected
     if (allMissingIngredients.length > 0) {
-        setSelected(allMissingIngredients.reduce((acc, i) => ({ ...acc, [i]: true }), {}));
+      setSelected(
+        allMissingIngredients.reduce((acc, i) => ({ ...acc, [i]: true }), {})
+      );
     }
   }, [recipes]); // Rerun only when recipes change
-  
 
   const handleCheckboxChange = (ingredient: string, checked: boolean) => {
     setSelected((prev) => ({ ...prev, [ingredient]: checked }));
@@ -169,6 +227,10 @@ function MissingIngredientsDialog({
       .filter(([, isSelected]) => isSelected)
       .map(([ingredient]) => ingredient);
     onConfirm(selectedIngredients);
+  };
+
+  const handleCancel = () => {
+    onCancel();
   };
 
   return (
@@ -219,24 +281,32 @@ function MissingIngredientsDialog({
   );
 }
 
-
 export default function RecipeGenerator() {
   const { user } = useAuth();
   const [idToken, setIdToken] = useState<string | null>(null);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const [showMissingIngredientsDialog, setShowMissingIngredientsDialog] = useState(false);
+  const [showMissingIngredientsDialog, setShowMissingIngredientsDialog] =
+    useState(false);
   const [recipes, setRecipes] = useState<Recipe[] | null>(null);
   const [guestAttempts, setGuestAttempts] = useState(MAX_GUEST_ATTEMPTS);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [state, formAction, isPending] = useActionState(generateRecipeAction, initialState);
+  const [formValues, setFormValues] = useState({
+    ingredients: "",
+    dietaryRestrictions: "none",
+    cookingTime: "any",
+  });
+  const [state, formAction, isPending] = useActionState(
+    generateRecipeAction,
+    initialState
+  );
 
   useEffect(() => {
     if (user) {
       user.getIdToken().then(setIdToken);
     } else {
       setIdToken(null);
-      const attempts = localStorage.getItem('guestAttempts');
+      const attempts = localStorage.getItem("guestAttempts");
       setGuestAttempts(attempts ? parseInt(attempts, 10) : MAX_GUEST_ATTEMPTS);
     }
   }, [user]);
@@ -245,14 +315,14 @@ export default function RecipeGenerator() {
     if (isPending) return;
 
     if (state.validationError) {
-        setValidationError(state.validationError);
-        return;
+      setValidationError(state.validationError);
+      return;
     }
 
     if (state.message && state.error && !state.validationError) {
       toast({
-        variant: 'destructive',
-        title: 'Oh no! Something went wrong.',
+        variant: "destructive",
+        title: "Oh no! Something went wrong.",
         description: state.message,
       });
     }
@@ -261,7 +331,7 @@ export default function RecipeGenerator() {
       if (!user) {
         setGuestAttempts((prev) => {
           const newAttemptCount = prev - 1;
-          localStorage.setItem('guestAttempts', newAttemptCount.toString());
+          localStorage.setItem("guestAttempts", newAttemptCount.toString());
           return newAttemptCount;
         });
       }
@@ -281,32 +351,49 @@ export default function RecipeGenerator() {
     }
   }, [state, toast, user, isPending]);
 
-  const handleFormAction = (formData: FormData) => {
-    setRecipes(null);
+  const handleFormAction = async (formData: FormData) => {
+    // Store form values before submission
+    setFormValues({
+      ingredients: (formData.get("ingredients") as string) || "",
+      dietaryRestrictions:
+        (formData.get("dietaryRestrictions") as string) || "none",
+      cookingTime: (formData.get("cookingTime") as string) || "any",
+    });
+
+    formData.set("idToken", idToken ?? "");
+
+    // Don't reset recipes immediately - let the useEffect handle it
     setValidationError(null);
     setShowMissingIngredientsDialog(false);
 
-    formData.set('idToken', idToken ?? '');
     formAction(formData);
-  }
+  };
 
   const handleRecipeCancellation = () => {
     setShowMissingIngredientsDialog(false);
-  }
+  };
 
   const handleRegenerateWithSelection = (selectedIngredients: string[]) => {
     if (formRef.current) {
-        const formData = new FormData(formRef.current);
-        const originalIngredients = formData.get('ingredients') as string || '';
-        
-        const newIngredients = [originalIngredients, ...selectedIngredients].filter(Boolean).join(', ');
-        
-        formData.set('ingredients', newIngredients);
-        formData.set('isDialogFlow', 'false'); // Mark as non-dialog run
-        
-        handleFormAction(formData);
+      const formData = new FormData(formRef.current);
+      const originalIngredients = (formData.get("ingredients") as string) || "";
+
+      const newIngredients = [originalIngredients, ...selectedIngredients]
+        .filter(Boolean)
+        .join(", ");
+
+      formData.set("ingredients", newIngredients);
+      formData.set("isDialogFlow", "false"); // Mark as non-dialog run
+
+      // Update form values to reflect the new ingredients
+      setFormValues((prev) => ({
+        ...prev,
+        ingredients: newIngredients,
+      }));
+
+      handleFormAction(formData);
     }
-  }
+  };
 
   const noMoreAttempts = !user && guestAttempts <= 0;
 
@@ -317,15 +404,21 @@ export default function RecipeGenerator() {
           Turn Leftovers into Delights
         </h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Got some ingredients lying around? Don't let them go to waste! Tell us what you have, and we'll whip up delicious recipes for you.
+          Got some ingredients lying around? Don't let them go to waste! Tell us
+          what you have, and we'll whip up delicious recipes for you.
         </p>
       </section>
 
       <Card className="max-w-4xl mx-auto shadow-lg">
         <form ref={formRef} action={handleFormAction}>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Your Kitchen Pantry</CardTitle>
-            <CardDescription>List your ingredients, separated by commas. Then, select your preferences.</CardDescription>
+            <CardTitle className="font-headline text-2xl">
+              Your Kitchen Pantry
+            </CardTitle>
+            <CardDescription>
+              List your ingredients, separated by commas. Then, select your
+              preferences.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-2">
@@ -336,13 +429,33 @@ export default function RecipeGenerator() {
                 placeholder="e.g., chicken breast, broccoli, garlic, olive oil"
                 required
                 rows={4}
+                value={formValues.ingredients}
+                onChange={(e) =>
+                  setFormValues((prev) => ({
+                    ...prev,
+                    ingredients: e.target.value,
+                  }))
+                }
               />
-               {state?.message && state.error && !state.validationError && <p className="text-sm font-medium text-destructive">{state.message}</p>}
+              {state?.message && state.error && !state.validationError && (
+                <p className="text-sm font-medium text-destructive">
+                  {state.message}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="dietaryRestrictions">Dietary Needs</Label>
-                <Select name="dietaryRestrictions" defaultValue="none">
+                <Select
+                  name="dietaryRestrictions"
+                  value={formValues.dietaryRestrictions}
+                  onValueChange={(value) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      dietaryRestrictions: value,
+                    }))
+                  }
+                >
                   <SelectTrigger id="dietaryRestrictions">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
@@ -357,7 +470,13 @@ export default function RecipeGenerator() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="cookingTime">Cooking Time</Label>
-                <Select name="cookingTime" defaultValue="any">
+                <Select
+                  name="cookingTime"
+                  value={formValues.cookingTime}
+                  onValueChange={(value) =>
+                    setFormValues((prev) => ({ ...prev, cookingTime: value }))
+                  }
+                >
                   <SelectTrigger id="cookingTime">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
@@ -372,54 +491,63 @@ export default function RecipeGenerator() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-4">
-             {!user && (
-                <div className="text-sm text-muted-foreground">
-                    {noMoreAttempts ? (
-                        <p>
-                            You're out of free generations. <Link href="/signup" className="underline text-primary">Sign up</Link> for unlimited recipes!
-                        </p>
-                    ) : (
-                        <p>
-                            You have <span className="font-bold text-foreground">{guestAttempts}</span> free generation{guestAttempts === 1 ? '' : 's'} left.
-                        </p>
-                    )}
-                </div>
+            {!user && (
+              <div className="text-sm text-muted-foreground">
+                {noMoreAttempts ? (
+                  <p>
+                    You're out of free generations.{" "}
+                    <Link href="/signup" className="underline text-primary">
+                      Sign up
+                    </Link>{" "}
+                    for unlimited recipes!
+                  </p>
+                ) : (
+                  <p>
+                    You have{" "}
+                    <span className="font-bold text-foreground">
+                      {guestAttempts}
+                    </span>{" "}
+                    free generation{guestAttempts === 1 ? "" : "s"} left.
+                  </p>
+                )}
+              </div>
             )}
             <SubmitButton disabled={noMoreAttempts || isPending} />
           </CardFooter>
         </form>
       </Card>
 
-      <AlertDialog open={!!validationError} onOpenChange={() => setValidationError(null)}>
+      <AlertDialog
+        open={!!validationError}
+        onOpenChange={() => setValidationError(null)}
+      >
         <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="text-destructive" />
-                    Ingredient Conflict
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                    {validationError}
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogAction onClick={() => setValidationError(null)}>
-                    Got it
-                </AlertDialogAction>
-            </AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="text-destructive" />
+              Ingredient Conflict
+            </AlertDialogTitle>
+            <AlertDialogDescription>{validationError}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setValidationError(null)}>
+              Got it
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {showMissingIngredientsDialog && recipes && (
-        <MissingIngredientsDialog 
-            recipes={recipes} 
-            onConfirm={handleRegenerateWithSelection} 
-            onCancel={handleRecipeCancellation}
+        <MissingIngredientsDialog
+          recipes={recipes}
+          onConfirm={handleRegenerateWithSelection}
+          onCancel={handleRecipeCancellation}
         />
       )}
-      
-      {!isPending && recipes && !showMissingIngredientsDialog && <RecipeDisplay recipes={recipes} />}
+
+      {!isPending && recipes && !showMissingIngredientsDialog && (
+        <RecipeDisplay recipes={recipes} />
+      )}
     </div>
   );
 }
-
-    

@@ -15,14 +15,14 @@ import { validateIngredientsWithDietaryNeeds } from '@/ai/flows/validate-ingredi
 
 // Schema for generating a recipe
 const recipeSchema = z.object({
-  ingredients: z.string().min(3, 'Please enter at least one ingredient.'),
+  ingredients: z.string().min(1, "Please enter at least one ingredient."),
   dietaryRestrictions: z.string().optional(),
   cookingTime: z.string().optional(),
-  isDialogFlow: z.string().optional(), // Used to track if this is the first run
+  isDialogFlow: z.string().optional().nullable().default("false"),
 });
 
 // Define the shape of a single recipe for use in the state
-export type Recipe = GenerateRecipeFromIngredientsOutput['recipes'][0] & {
+export type Recipe = GenerateRecipeFromIngredientsOutput["recipes"][0] & {
   _id: string;
   isFavorited?: boolean;
 };
@@ -40,90 +40,118 @@ export async function generateRecipeAction(
   prevState: GenerateRecipeState,
   formData: FormData
 ): Promise<GenerateRecipeState> {
-  const idToken = formData.get('idToken') as string | null;
+  const idToken = formData.get("idToken") as string | null;
   let user;
   if (idToken) {
     try {
       user = await verifySession(idToken);
     } catch (e) {
       if (e instanceof Error) {
-          return { message: e.message, error: true };
+        return { message: e.message, error: true };
       }
-      return { message: 'An unknown authentication error occurred.', error: true };
+      return {
+        message: "An unknown authentication error occurred.",
+        error: true,
+      };
     }
   }
 
   const validatedFields = recipeSchema.safeParse({
-    ingredients: formData.get('ingredients'),
-    dietaryRestrictions: formData.get('dietaryRestrictions'),
-    cookingTime: formData.get('cookingTime'),
-    isDialogFlow: formData.get('isDialogFlow'),
+    ingredients: formData.get("ingredients"),
+    dietaryRestrictions: formData.get("dietaryRestrictions"),
+    cookingTime: formData.get("cookingTime"),
+    isDialogFlow: formData.get("isDialogFlow"),
   });
 
+  console.error("Validation Error:", validatedFields.error);
+
   if (!validatedFields.success) {
+    const flatErrors = validatedFields.error.flatten().fieldErrors;
+    const firstError =
+      flatErrors.ingredients?.[0] ||
+      flatErrors.dietaryRestrictions?.[0] ||
+      flatErrors.cookingTime?.[0] ||
+      "Invalid input. Please check your entries.";
+
     return {
-      message: validatedFields.error.flatten().fieldErrors.ingredients?.[0],
+      message: firstError,
       error: true,
     };
   }
-  
-  const isDialogFlow = validatedFields.data.isDialogFlow !== 'false';
+
+  const isDialogFlow = validatedFields.data.isDialogFlow !== "false";
 
   // Ingredient validation step
-  if (validatedFields.data.dietaryRestrictions && validatedFields.data.dietaryRestrictions !== 'none') {
+  if (
+    validatedFields.data.dietaryRestrictions &&
+    validatedFields.data.dietaryRestrictions !== "none"
+  ) {
     const validationResult = await validateIngredientsWithDietaryNeeds({
       ingredients: validatedFields.data.ingredients,
       dietaryRestrictions: validatedFields.data.dietaryRestrictions,
     });
     if (!validationResult.isValid) {
       return {
-        message: 'Ingredient validation failed.',
+        message: "Ingredient validation failed.",
         error: true,
-        validationError: validationResult.reason || 'One or more ingredients do not match the selected dietary restriction.',
-      }
+        validationError:
+          validationResult.reason ||
+          "One or more ingredients do not match the selected dietary restriction.",
+      };
     }
   }
 
   try {
     const generationResult = await generateRecipeFromIngredients({
-        ...validatedFields.data,
-        // If this is the second run (user confirmed ingredients), tell the AI to be strict.
-        strict: !isDialogFlow,
+      ...validatedFields.data,
+      // If this is the second run (user confirmed ingredients), tell the AI to be strict.
+      strict: !isDialogFlow,
     });
 
-    if (!generationResult || !generationResult.recipes || generationResult.recipes.length === 0) {
-      return { message: 'Could not generate any recipes. Please try different ingredients.', error: true };
+    if (
+      !generationResult ||
+      !generationResult.recipes ||
+      generationResult.recipes.length === 0
+    ) {
+      return {
+        message:
+          "Could not generate any recipes. Please try different ingredients.",
+        error: true,
+      };
     }
 
-    const recipesToInsert = generationResult.recipes.map(recipe => ({
+    const recipesToInsert = generationResult.recipes.map((recipe) => ({
       ...recipe,
-      userId: user?.uid ?? 'guest', // Mark guest recipes
+      userId: user?.uid ?? "guest", // Mark guest recipes
       createdAt: new Date(),
     }));
 
     const client = await clientPromise;
     const db = client.db();
-    const result = await db.collection('recipes').insertMany(recipesToInsert);
+    const result = await db.collection("recipes").insertMany(recipesToInsert);
 
-    revalidatePath('/recipes');
+    revalidatePath("/recipes");
 
-    const insertedRecipes = Object.values(result.insertedIds).map((id, index) => ({
-      ...generationResult.recipes[index],
-      _id: id.toString(),
-    }));
+    const insertedRecipes = Object.values(result.insertedIds).map(
+      (id, index) => ({
+        ...generationResult.recipes[index],
+        _id: id.toString(),
+      })
+    );
 
     return {
       recipes: insertedRecipes,
-      message: 'Recipes generated successfully!',
+      message: "Recipes generated successfully!",
       error: false,
       isDialogFlow: isDialogFlow,
     };
   } catch (e) {
     console.error(e);
-    const errorMessage = e instanceof Error ? e.message : 'An unexpected error occurred.';
-    return { 
-        message: `The AI failed to generate recipes. This could be due to a network issue or content restrictions. Please try again. (Error: ${errorMessage})`, 
-        error: true 
+    const errorMessage =
+      e instanceof Error ? e.message : "An unexpected error occurred.";
+    return {
+      message: `The AI failed to generate recipes. This could be due to a network issue or content restrictions. Please try again. (Error: ${errorMessage})`,
+      error: true,
     };
   }
 }
