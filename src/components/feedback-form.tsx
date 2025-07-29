@@ -45,7 +45,7 @@ export function FeedbackForm({ recipeId }: { recipeId: string }) {
       toast({
         title: state.error ? 'Error' : 'Success',
         description: state.message,
-        variant: state.error ? 'destructive' : 'default',
+        variant: state.error ? 'destructive' : 'success',
       });
       if(state.success) {
         formRef.current?.reset();
