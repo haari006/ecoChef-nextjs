@@ -6,7 +6,7 @@
  *
  * - generateRecipeFromIngredients - A function that generates recipes from ingredients.
  * - GenerateRecipeFromIngredientsInput - The input type for the generateRecipeFromIngredients function.
- * - GenerateRecipeFromIngredientsOutput - The return type for the generateRecipeFromingredients function.
+ * - GenerateRecipeFromIngredientsOutput - The return type for the generateRecipefromingredients function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -54,11 +54,27 @@ export async function generateRecipeFromIngredients(
   return generateRecipeFromIngredientsFlow(input);
 }
 
+const localizationContext = `
+region,preferred_ingredient,style,dish_type
+Tuscany,"olive oil, tomatoes, basil",Italian,Pasta
+Provence,"lavender, garlic, olives",French,Seafood
+Kyoto,"miso, tofu, seaweed",Japanese,Noodle Soup
+Oaxaca,"chiles, corn, chocolate",Mexican,Tacos
+Punjab,"paneer, chickpeas, garam masala",Indian,Curry
+`;
+
 const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   name: 'generateRecipeFromIngredientsPrompt',
   input: {schema: GenerateRecipeFromIngredientsInputSchema},
   output: {schema: GenerateRecipeFromIngredientsOutputSchema},
   prompt: `You are a recipe creation expert. Given a list of ingredients, dietary restrictions, and cooking time preferences, you will generate three distinct and detailed recipes.
+
+  Use the following CSV data as context for creating personalized or localized recipes. If the user's ingredients suggest a certain cuisine, lean into that style.
+  
+  Contextual Data:
+  \`\`\`csv
+  {{{localizationContext}}}
+  \`\`\`
 
   Ingredients: {{{ingredients}}}
   Dietary Restrictions: {{{dietaryRestrictions}}}
@@ -82,7 +98,10 @@ const generateRecipeFromIngredientsFlow = ai.defineFlow(
     outputSchema: GenerateRecipeFromIngredientsOutputSchema,
   },
   async input => {
-    const {output} = await generateRecipeFromIngredientsPrompt(input);
+    const {output} = await generateRecipeFromIngredientsPrompt({
+      ...input,
+      localizationContext,
+    });
     if (!output) {
         throw new Error("The AI model did not return a valid response.");
     }
