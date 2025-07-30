@@ -24,15 +24,13 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
       </head>
-      <body>
+      <body className={cn('min-h-screen bg-background font-body antialiased')}>
         <AuthProvider>
-          <div className={cn('min-h-screen bg-background font-body antialiased')}>
-            <div className="relative flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-            </div>
-            <Toaster />
+          <div className="relative flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
           </div>
+          <Toaster />
         </AuthProvider>
       </body>
     </html>
