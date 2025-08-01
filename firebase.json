@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "your-project-id",
+    "site": "prod-ecochef",
     "public": "out",
     "ignore": [
       "firebase.json",
