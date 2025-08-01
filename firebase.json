@@ -1,13 +1,16 @@
 {
   "hosting": {
     "site": "your-project-id",
+    "public": "out",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
       {
         "source": "**",
-        "apphosting": {
-          "backendId": "ecochef-backend",
-          "region": "us-central1"
-        }
+        "destination": "/index.html"
       }
     ]
   }
