@@ -1,9 +1,9 @@
 import { MongoClient, ServerApiVersion } from 'mongodb';
 
-const uri = process.env.mongodb_uri;
+const uri = process.env.MONGODB_URI;
 
 if (!uri || !(uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
-    throw new Error('Invalid/Missing environment variable: "mongodb_uri". Please add your MongoDB connection string to the .env file. It should start with "mongodb://" or "mongodb+srv://".');
+    throw new Error('Invalid/Missing environment variable: "MONGODB_URI". Please add your MongoDB connection string to the .env file. It should start with "mongodb://" or "mongodb+srv://".');
 }
 
 const options = {
