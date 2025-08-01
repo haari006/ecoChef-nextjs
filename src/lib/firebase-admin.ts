@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
-  const base64Config = process.env.FIREBASE_ADMIN_CONFIG_BASE64;
+  const base64Config = process.env.firebase_admin_config_base64;
 
   if (base64Config && base64Config.trim() !== "") {
     try {
@@ -13,14 +13,14 @@ if (!admin.apps.length) {
       });
     } catch (e) {
       console.error(
-        "Failed to decode or initialize FIREBASE_ADMIN_CONFIG_BASE64:",
+        "Failed to decode or initialize firebase_admin_config_base64:",
         e
       );
     }
   } else {
     if (process.env.NODE_ENV === "development") {
       console.warn(
-        "FIREBASE_ADMIN_CONFIG_BASE64 is not set. Firebase Admin SDK not initialized."
+        "firebase_admin_config_base64 is not set. Firebase Admin SDK not initialized."
       );
     }
   }
@@ -29,7 +29,7 @@ if (!admin.apps.length) {
 function getAdminAuth() {
     if (!admin.apps.length) {
         throw new Error(
-          "Firebase Admin SDK is not initialized. Add FIREBASE_ADMIN_CONFIG_BASE64 to your .env.local file."
+          "Firebase Admin SDK is not initialized. Add firebase_admin_config_base64 to your .env.local file."
         );
     }
     return admin.auth();
