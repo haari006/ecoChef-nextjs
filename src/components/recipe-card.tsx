@@ -18,9 +18,8 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
         <div className="aspect-video relative w-full overflow-hidden rounded-t-lg mb-4">
             <Link href={`/recipes/${recipe._id}`} className="block h-full w-full">
                 <Image 
-                    src={`https://placehold.co/600x400.png`}
+                    src="https://storage.googleapis.com/aai-web-samples/ecochef/recipe_placeholder.jpg"
                     alt={recipe.recipeName} 
-                    data-ai-hint="recipe food"
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
