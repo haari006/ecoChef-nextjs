@@ -46,7 +46,7 @@ export default async function RecipePage({ params }: { params: { id: string } })
       <article className="max-w-4xl mx-auto">
         <div className="aspect-video relative w-full overflow-hidden rounded-lg mb-8 shadow-lg">
             <Image 
-              src="https://storage.googleapis.com/aai-web-samples/ecochef/recipe_placeholder.jpg" 
+              src="/images/recipe_placeholder.jpg" 
               alt={recipe.recipeName}
               fill
               className="object-cover"
