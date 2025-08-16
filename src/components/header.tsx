@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { Leaf, LogOut, UserCog, Heart, Languages } from 'lucide-react';
+import { Leaf, LogOut, UserCog, Heart, Languages, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { logout } from '@/app/(auth)/actions';
@@ -21,17 +22,23 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useLanguage } from '@/hooks/use-language';
 import { useTranslation } from '@/hooks/use-translation';
+import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { useState } from 'react';
+import { MobileNav } from './mobile-nav';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 export default function Header() {
   const { user, loading } = useAuth();
   const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID?.trim();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // After client-side sign out, we can still call the server action to redirect
       await logout();
     } catch (error) {
       console.error("Error during logout:", error);
@@ -47,27 +54,29 @@ export default function Header() {
             EcoChef
           </span>
         </Link>
-        <nav className="flex items-center space-x-4 text-sm font-medium">
+        <nav className="hidden items-center space-x-4 text-sm font-medium md:flex">
             <Link href="/recipes" className="text-muted-foreground transition-colors hover:text-foreground">
                 {t('header.recipes')}
             </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <Languages className="h-5 w-5" />
-                        <span className="sr-only">Change language</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup value={language} onValueChange={setLanguage}>
-                        <DropdownMenuRadioItem value="en">English</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="ms">Bahasa Melayu</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-            </DropdownMenu>
-          <nav className="flex items-center">
+            <div className="hidden md:flex">
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                          <Languages className="h-5 w-5" />
+                          <span className="sr-only">Change language</span>
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                      <DropdownMenuRadioGroup value={language} onValueChange={setLanguage}>
+                          <DropdownMenuRadioItem value="en">English</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="ms">Bahasa Melayu</DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          <nav className="hidden items-center md:flex">
             {loading ? (
                 <Skeleton className="h-8 w-8 rounded-full" />
             ) : user ? (
@@ -120,6 +129,19 @@ export default function Header() {
                 </>
             )}
           </nav>
+          <div className="md:hidden">
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <Menu />
+                        <span className="sr-only">Open navigation menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                    <MobileNav onLinkClick={() => setIsSheetOpen(false)} />
+                </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>
