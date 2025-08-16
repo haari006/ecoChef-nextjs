@@ -74,8 +74,8 @@ export function MobileNav({ onLinkClick }: MobileNavProps) {
             <div className="pt-2">
                 <p className="text-sm font-medium text-muted-foreground mb-2">{t('mobileNav.language')}</p>
                 <div className="flex gap-2">
-                    <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => handleLanguageChange('en')} className="w-full">English</Button>
-                    <Button variant={language === 'ms' ? 'default' : 'outline'} onClick={() => handleLanguageChange('ms')} className="w-full">Bahasa Melayu</Button>
+                    <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => handleLanguageChange('en')} className="flex-1">English</Button>
+                    <Button variant={language === 'ms' ? 'default' : 'outline'} onClick={() => handleLanguageChange('ms')} className="flex-1">Bahasa Melayu</Button>
                 </div>
             </div>
             
