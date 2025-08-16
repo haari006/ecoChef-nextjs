@@ -76,13 +76,13 @@ export function MobileNav({ onLinkClick }: MobileNavProps) {
             <div className="pt-2">
                 <p className="text-sm font-medium text-muted-foreground mb-2">{t('mobileNav.language')}</p>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => handleLanguageChange('en')} className={`flex-1 ${language !== 'en' ? 'opacity-50' : ''}`}>
+                  <Button variant="ghost" onClick={() => handleLanguageChange('en')} className={`flex-1 ${language !== 'en' ? 'opacity-50' : ''}`}>
                     <FlagIcon code="GB" className="mr-2" />
-                    English
+                    
                   </Button>
-                  <Button variant="outline" onClick={() => handleLanguageChange('ms')} className={`flex-1 ${language !== 'ms' ? 'opacity-50' : ''}`}>
+                  <Button variant="ghost" onClick={() => handleLanguageChange('ms')} className={`flex-1 ${language !== 'ms' ? 'opacity-50' : ''}`}>
                     <FlagIcon code="MY" className="mr-2" />
-                    Melayu
+                    
                   </Button>
                 </div>
             </div>
