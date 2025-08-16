@@ -13,7 +13,6 @@ import { auth } from '@/lib/firebase';
 import { Separator } from './ui/separator';
 import { SheetDescription, SheetHeader, SheetTitle } from './ui/sheet';
 import { srOnly } from '@/lib/utils';
-import { Flag } from 'react-flag-kit';
 
 
 interface MobileNavProps {
@@ -77,11 +76,11 @@ export function MobileNav({ onLinkClick }: MobileNavProps) {
                 <p className="text-sm font-medium text-muted-foreground mb-2">{t('mobileNav.language')}</p>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => handleLanguageChange('en')} className={`flex-1 ${language !== 'en' ? 'opacity-50' : ''}`}>
-                    <Flag country="GB" className="mr-2" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512" className="mr-2"><path fill="#0052b4" d="M0 0h512v512H0z"/><path fill="#fff" d="m0 256 256-192v384L0 256zm512 0L256 64v384l256-192z"/><path fill="#d80027" d="M224 0h64v512h-64z"/><path fill="#d80027" d="M0 224h512v64H0z"/><path fill="#fff" d="m202 202 108 108m-108 0 108-108"/><path fill="#d80027" d="m180 180 152 152m-152 0 152-152"/></svg>
                     English
                   </Button>
                   <Button variant="outline" onClick={() => handleLanguageChange('ms')} className={`flex-1 ${language !== 'ms' ? 'opacity-50' : ''}`}>
-                    <Flag country="MY" className="mr-2" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512" className="mr-2"><path fill="#0052b4" d="M0 0h512v256H0Z"/><path fill="#d80027" d="M0 256h512v256H0Z"/><path d="M0 0v28L512 284V256l-512-28z" fill="#fff"/><path d="M0 56v28L512 312V284l-512-28z" fill="#fff"/><path d="M0 112v28L512 368V340l-512-28z" fill="#fff"/><path d="M0 168v28L512 424V396l-512-28z" fill="#fff"/><path d="M0 224v28L512 480V452l-512-28z" fill="#fff"/><path d="M512 0v28L0 284V256l512-28z" fill="#d80027"/><path d="M512 56v28L0 312V284l512-28z" fill="#d80027"/><path d="M512 112v28L0 368V340l512-28z" fill="#d80027"/><path d="M512 168v28L0 424V396l512-28z" fill="#d80027"/><path d="M512 224v28L0 480V452l512-28z" fill="#d80027"/><path fill="#ffda44" d="M202.66 128a53.33 53.33 0 1 0-37.71 91.04 64 64 0 1 1 37.71-91.04Z"/></svg>
                     Melayu
                   </Button>
                 </div>
