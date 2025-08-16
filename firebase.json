@@ -1,17 +1,16 @@
 {
-  "hosting": {
-    "site": "prod-ecochef",
-    "public": "out",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  }
+  "apphosting": [
+    {
+      "target": "prod",
+      "backendId": "prod-ecochef",
+      "rootDir": "/",
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "alwaysDeployFromSource": true
+    }
+  ]
 }

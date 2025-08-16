@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Leaf, LogOut, UserCog, Heart } from 'lucide-react';
+import { Leaf, LogOut, UserCog, Heart, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { logout } from '@/app/(auth)/actions';
@@ -13,14 +13,20 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem
   } from '@/components/ui/dropdown-menu';
 import { Skeleton } from './ui/skeleton';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { useLanguage } from '@/hooks/use-language';
+import { useTranslation } from '@/hooks/use-translation';
 
 export default function Header() {
   const { user, loading } = useAuth();
   const isAdmin = user?.uid === process.env.NEXT_PUBLIC_ADMIN_UID?.trim();
+  const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
   
   const handleLogout = async () => {
     try {
@@ -43,10 +49,24 @@ export default function Header() {
         </Link>
         <nav className="flex items-center space-x-4 text-sm font-medium">
             <Link href="/recipes" className="text-muted-foreground transition-colors hover:text-foreground">
-                Recipes
+                {t('header.recipes')}
             </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <Languages className="h-5 w-5" />
+                        <span className="sr-only">Change language</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuRadioGroup value={language} onValueChange={setLanguage}>
+                        <DropdownMenuRadioItem value="en">English</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="ms">Bahasa Melayu</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
           <nav className="flex items-center">
             {loading ? (
                 <Skeleton className="h-8 w-8 rounded-full" />
@@ -71,20 +91,20 @@ export default function Header() {
                         <DropdownMenuItem asChild>
                             <Link href="/favorites" className="cursor-pointer">
                                 <Heart className="mr-2 h-4 w-4" />
-                                <span>My Favorites</span>
+                                <span>{t('header.favorites')}</span>
                             </Link>
                         </DropdownMenuItem>
                         {isAdmin && (
                             <DropdownMenuItem asChild>
                                 <Link href="/admin" className="cursor-pointer">
                                     <UserCog className="mr-2 h-4 w-4" />
-                                    <span>Admin Dashboard</span>
+                                    <span>{t('header.admin')}</span>
                                 </Link>
                             </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                             <LogOut className="mr-2 h-4 w-4" />
-                            <span>Log out</span>
+                            <span>{t('header.logout')}</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -92,10 +112,10 @@ export default function Header() {
             ) : (
                 <>
                     <Button variant="ghost" asChild>
-                        <Link href="/login">Login</Link>
+                        <Link href="/login">{t('header.login')}</Link>
                     </Button>
                     <Button asChild>
-                        <Link href="/signup">Sign Up</Link>
+                        <Link href="/signup">{t('header.signup')}</Link>
                     </Button>
                 </>
             )}

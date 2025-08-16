@@ -19,6 +19,7 @@ const recipeSchema = z.object({
   dietaryRestrictions: z.string().optional(),
   cookingTime: z.string().optional(),
   isDialogFlow: z.string().optional().nullable().default("false"),
+  language: z.string().optional(),
 });
 
 // Define the shape of a single recipe for use in the state
@@ -61,6 +62,7 @@ export async function generateRecipeAction(
     dietaryRestrictions: formData.get("dietaryRestrictions"),
     cookingTime: formData.get("cookingTime"),
     isDialogFlow: formData.get("isDialogFlow"),
+    language: formData.get("language"),
   });
 
   if (!validatedFields.success) {

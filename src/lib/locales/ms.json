@@ -1,0 +1,69 @@
+{
+    "header": {
+        "recipes": "Resepi",
+        "favorites": "Kegemaran Saya",
+        "admin": "Papan Pemuka Pentadbir",
+        "login": "Log Masuk",
+        "signup": "Daftar",
+        "logout": "Log Keluar"
+    },
+    "generator": {
+        "title": "Tukar Lebihan Makanan Menjadi Hidangan Lazat",
+        "subtitle": "Ada bahan lebihan di dapur? Jangan biarkan ia membazir! Beritahu kami apa yang anda ada, dan kami akan sediakan resepi lazat untuk anda.",
+        "cardTitle": "Dapur Anda",
+        "cardDescription": "Senaraikan bahan-bahan anda, diasingkan dengan koma. Kemudian, pilih pilihan anda.",
+        "ingredientsLabel": "Bahan-bahan Tersedia",
+        "ingredientsPlaceholder": "cth., dada ayam, brokoli, bawang putih, minyak zaitun",
+        "dietaryNeedsLabel": "Keperluan Diet",
+        "dietaryNeeds": {
+            "none": "Tiada",
+            "vegan": "Vegan",
+            "vegetarian": "Vegetarian",
+            "glutenFree": "Bebas Gluten",
+            "halal": "Halal"
+        },
+        "cookingTimeLabel": "Masa Memasak",
+        "cookingTime": {
+            "any": "Bila-bila masa",
+            "quick": "Bawah 30 min",
+            "medium": "30-60 min",
+            "long": "Lebih 60 min"
+        },
+        "button": {
+            "generate": "Jana Resepi",
+            "generating": "Menjana..."
+        },
+        "guest": {
+            "noAttempts": "Anda sudah kehabisan percubaan percuma.",
+            "signUp": "Daftar",
+            "forUnlimited": "untuk resepi tanpa had!",
+            "youHave": "Anda mempunyai",
+            "generationsLeft": "{{count}} percubaan percuma lagi."
+        }
+    },
+    "recipeDisplay": {
+        "loginRequiredTitle": "Sila Log Masuk",
+        "loginRequiredDesc": "Anda perlu log masuk untuk menyimpan resepi.",
+        "favoriteSuccessTitle": "Berjaya!",
+        "favorited": "Telah Digemari",
+        "addToFavorites": "Tambah ke Kegemaran",
+        "ingredients": "Bahan-bahan",
+        "instructions": "Arahan",
+        "feedbackPrompt": "Suka resepi ini? Beri penilaian anda!",
+        "feedbackLinkPrompt": "Atau lihat semua maklum balas untuk resepi ini:",
+        "viewFullPage": "Lihat Halaman Resepi Penuh"
+    },
+    "missingIngredients": {
+        "title": "Pemberitahuan!",
+        "description": "Resepi yang dijana mencadangkan beberapa bahan yang tiada dalam senarai anda. Nyahtanda mana-mana yang anda tidak mahu gunakan, kemudian sahkan untuk menjana resepi baharu atau klik batal untuk melihat yang sedia ada.",
+        "needed": "Bahan tambahan yang diperlukan:",
+        "showCurrent": "Tunjukkan Resepi Ini",
+        "generateNew": "Jana Resepi Baharu"
+    },
+    "common": {
+        "error": "Ralat",
+        "toastErrorTitle": "Alamak! Sesuatu telah berlaku.",
+        "toastSuccessTitle": "Resepi Berjaya Dijana!",
+        "toastSuccessDesc": "Skrol ke bawah untuk melihat resepi lazat baharu anda."
+    }
+}

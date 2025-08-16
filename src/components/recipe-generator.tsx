@@ -55,6 +55,8 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { Checkbox } from "./ui/checkbox";
+import { useLanguage } from "@/hooks/use-language";
+import { useTranslation } from "@/hooks/use-translation";
 
 const initialState: GenerateRecipeState = {
   message: null,
@@ -70,6 +72,7 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setActiveRecipe(recipes[0]);
@@ -79,8 +82,8 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
   const handleFavorite = (recipeToSave: Recipe) => {
     if (!user) {
       toast({
-        title: 'Login Required',
-        description: 'You must be logged in to save recipes.',
+        title: t('recipeDisplay.loginRequiredTitle'),
+        description: t('recipeDisplay.loginRequiredDesc'),
         variant: 'destructive'
       });
       return;
@@ -90,7 +93,7 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
         const result = await saveRecipe(idToken, recipeToSave);
         if (result.success && result.recipeId) {
             toast({
-                title: 'Success!',
+                title: t('recipeDisplay.favoriteSuccessTitle'),
                 description: result.message,
                 variant: 'success'
             });
@@ -102,7 +105,7 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
             ));
         } else {
             toast({
-                title: 'Error',
+                title: t('common.error'),
                 description: result.message,
                 variant: 'destructive'
             });
@@ -176,7 +179,7 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
                                 }`}
                             />
                         )}
-                        <span className="sr-only">{recipe.isFavorited ? 'Favorited' : 'Add to favorites'}</span>
+                        <span className="sr-only">{recipe.isFavorited ? t('recipeDisplay.favorited') : t('recipeDisplay.addToFavorites')}</span>
                     </Button>
                 </div>
               </CardHeader>
@@ -184,7 +187,7 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
                 <div className="md:col-span-1">
                   <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2">
                     <UtensilsCrossed className="w-5 h-5 text-primary" />{" "}
-                    Ingredients
+                    {t('recipeDisplay.ingredients')}
                   </h3>
                   <ul className="space-y-2 list-disc list-inside text-foreground/80">
                     {recipe.ingredients.map((item, index) => (
@@ -194,7 +197,7 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
                 </div>
                 <div className="md:col-span-2">
                   <h3 className="font-bold font-headline text-xl mb-4 flex items-center gap-2">
-                    <ChefHat className="w-5 h-5 text-primary" /> Instructions
+                    <ChefHat className="w-5 h-5 text-primary" /> {t('recipeDisplay.instructions')}
                   </h3>
                   <ol className="space-y-4 list-decimal list-inside">
                     {recipe.instructions.map((step, index) => (
@@ -208,18 +211,18 @@ function RecipeDisplay({ recipes: initialRecipes }: { recipes: Recipe[] }) {
               {activeRecipe._id && (
                 <>
                 <CardFooter>
-                  Enjoyed this recipe? Give it a rating!
+                  {t('recipeDisplay.feedbackPrompt')}
                 </CardFooter>
                  <CardContent>
                     <FeedbackForm recipeId={activeRecipe._id} />
                 </CardContent>
                 <CardFooter className="flex-col gap-2">
                     <p className="text-sm text-muted-foreground">
-                        Or view all feedback for this recipe:
+                        {t('recipeDisplay.feedbackLinkPrompt')}
                     </p>
                     <Button variant="link" asChild>
                         <Link href={`/recipes/${activeRecipe._id}`}>
-                        View Full Recipe Page
+                        {t('recipeDisplay.viewFullPage')}
                         </Link>
                     </Button>
                 </CardFooter>
@@ -243,6 +246,7 @@ function MissingIngredientsDialog({
   onCancel: () => void;
 }) {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const { t } = useTranslation();
   
   const allMissingIngredients = [
     ...new Set(recipes.flatMap((r) => r.missingIngredients || [])),
@@ -278,15 +282,14 @@ function MissingIngredientsDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Info className="text-primary" />
-            Just a heads up!
+            {t('missingIngredients.title')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            The generated recipes suggest a few ingredients you didn't list.
-            Uncheck any you don't want to use, then confirm to generate new recipes or click cancel to see the current ones.
+            {t('missingIngredients.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-4 space-y-4">
-          <p className="font-semibold">Additional ingredients needed:</p>
+          <p className="font-semibold">{t('missingIngredients.needed')}</p>
           <div className="space-y-2 rounded-md bg-muted p-4 max-h-40 overflow-y-auto">
             {allMissingIngredients.map((item, index) => (
               <div key={index} className="flex items-center space-x-2">
@@ -309,10 +312,10 @@ function MissingIngredientsDialog({
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel}>
-            Show Me These Recipes
+            {t('missingIngredients.showCurrent')}
           </AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm}>
-            Generate New Recipes
+            {t('missingIngredients.generateNew')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -326,6 +329,8 @@ export default function RecipeGenerator() {
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
+  const { t } = useTranslation();
   const [showMissingIngredientsDialog, setShowMissingIngredientsDialog] =
     useState(false);
   const [recipesForDialog, setRecipesForDialog] = useState<Recipe[] | null>(
@@ -353,7 +358,7 @@ export default function RecipeGenerator() {
     if (state.message && state.error) {
       toast({
         variant: "destructive",
-        title: "Oh no! Something went wrong.",
+        title: t('common.toastErrorTitle'),
         description: state.message,
       });
     }
@@ -377,8 +382,8 @@ export default function RecipeGenerator() {
       } else {
         toast({
             variant: "success",
-            title: "Recipes Generated!",
-            description: "Scroll down to see your delicious new recipes.",
+            title: t('common.toastSuccessTitle'),
+            description: t('common.toastSuccessDesc'),
         });
         setTimeout(() => {
             resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -387,10 +392,11 @@ export default function RecipeGenerator() {
         setRecipesForDialog(null);
       }
     }
-  }, [state, toast, user]);
+  }, [state, toast, user, t]);
   
   const handleFormSubmit = (formData: FormData) => {
     formData.set("idToken", idToken ?? "");
+    formData.set("language", language);
     startTransition(() => {
         formAction(formData);
     });
@@ -420,11 +426,10 @@ export default function RecipeGenerator() {
     <div className="space-y-12">
       <section className="text-center">
         <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tight">
-          Turn Leftovers into Delights
+          {t('generator.title')}
         </h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Got some ingredients lying around? Don't let them go to waste! Tell us
-          what you have, and we'll whip up delicious recipes for you.
+          {t('generator.subtitle')}
         </p>
       </section>
 
@@ -432,20 +437,19 @@ export default function RecipeGenerator() {
         <form ref={formRef} action={handleFormSubmit}>
           <CardHeader>
             <CardTitle className="font-headline text-2xl">
-              Your Kitchen Pantry
+              {t('generator.cardTitle')}
             </CardTitle>
             <CardDescription>
-              List your ingredients, separated by commas. Then, select your
-              preferences.
+              {t('generator.cardDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-2">
-              <Label htmlFor="ingredients">Available Ingredients</Label>
+              <Label htmlFor="ingredients">{t('generator.ingredientsLabel')}</Label>
               <Textarea
                 id="ingredients"
                 name="ingredients"
-                placeholder="e.g., chicken breast, broccoli, garlic, olive oil"
+                placeholder={t('generator.ingredientsPlaceholder')}
                 required
                 rows={4}
                 disabled={isPending}
@@ -458,31 +462,31 @@ export default function RecipeGenerator() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="dietaryRestrictions">Dietary Needs</Label>
+                <Label htmlFor="dietaryRestrictions">{t('generator.dietaryNeedsLabel')}</Label>
                 <Select name="dietaryRestrictions" defaultValue="none" disabled={isPending}>
                   <SelectTrigger id="dietaryRestrictions">
-                    <SelectValue placeholder="None" />
+                    <SelectValue placeholder={t('generator.dietaryNeeds.none')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="vegan">Vegan</SelectItem>
-                    <SelectItem value="vegetarian">Vegetarian</SelectItem>
-                    <SelectItem value="gluten-free">Gluten-Free</SelectItem>
-                    <SelectItem value="halal">Halal</SelectItem>
+                    <SelectItem value="none">{t('generator.dietaryNeeds.none')}</SelectItem>
+                    <SelectItem value="vegan">{t('generator.dietaryNeeds.vegan')}</SelectItem>
+                    <SelectItem value="vegetarian">{t('generator.dietaryNeeds.vegetarian')}</SelectItem>
+                    <SelectItem value="gluten-free">{t('generator.dietaryNeeds.glutenFree')}</SelectItem>
+                    <SelectItem value="halal">{t('generator.dietaryNeeds.halal')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="cookingTime">Cooking Time</Label>
+                <Label htmlFor="cookingTime">{t('generator.cookingTimeLabel')}</Label>
                 <Select name="cookingTime" defaultValue="any" disabled={isPending}>
                   <SelectTrigger id="cookingTime">
-                    <SelectValue placeholder="Any" />
+                    <SelectValue placeholder={t('generator.cookingTime.any')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any</SelectItem>
-                    <SelectItem value="quick">Under 30 min</SelectItem>
-                    <SelectItem value="medium">30-60 min</SelectItem>
-                    <SelectItem value="long">Over 60 min</SelectItem>
+                    <SelectItem value="any">{t('generator.cookingTime.any')}</SelectItem>
+                    <SelectItem value="quick">{t('generator.cookingTime.quick')}</SelectItem>
+                    <SelectItem value="medium">{t('generator.cookingTime.medium')}</SelectItem>
+                    <SelectItem value="long">{t('generator.cookingTime.long')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -499,19 +503,19 @@ export default function RecipeGenerator() {
               <div className="text-sm text-muted-foreground">
                 {noMoreAttempts ? (
                   <p>
-                    You're out of free generations.{" "}
+                    {t('generator.guest.noAttempts')}{" "}
                     <Link href="/signup" className="underline text-primary">
-                      Sign up
+                      {t('generator.guest.signUp')}
                     </Link>{" "}
-                    for unlimited recipes!
+                    {t('generator.guest.forUnlimited')}
                   </p>
                 ) : (
                   <p>
-                    You have{" "}
+                    {t('generator.guest.youHave')}{" "}
                     <span className="font-bold text-foreground">
                       {guestAttempts}
                     </span>{" "}
-                    free generation{guestAttempts === 1 ? "" : "s"} left.
+                    {t('generator.guest.generationsLeft', { count: guestAttempts })}
                   </p>
                 )}
               </div>
@@ -525,12 +529,12 @@ export default function RecipeGenerator() {
                 {isPending ? (
                     <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    {t('generator.button.generating')}
                     </>
                 ) : (
                     <>
                     <ChefHat className="mr-2 h-4 w-4" />
-                    Generate Recipes
+                    {t('generator.button.generate')}
                     </>
                 )}
             </Button>

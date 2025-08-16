@@ -24,7 +24,8 @@ const GenerateRecipeFromIngredientsInputSchema = z.object({
     .string()
     .optional()
     .describe('Optional cooking time preference, such as quick (under 30 minutes), medium (30-60 minutes), or long (over 60 minutes).'),
-  strict: z.boolean().optional().describe('If true, the model should ONLY use the provided ingredients and not suggest any new ones.')
+  strict: z.boolean().optional().describe('If true, the model should ONLY use the provided ingredients and not suggest any new ones.'),
+  language: z.string().optional().describe('The language to generate the recipe in (e.g., "en" for English, "ms" for Malay).')
 });
 export type GenerateRecipeFromIngredientsInput = z.infer<
   typeof GenerateRecipeFromIngredientsInputSchema
@@ -71,7 +72,7 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   name: 'generateRecipeFromIngredientsPrompt',
   input: {schema: GenerateRecipeFromIngredientsInputSchema},
   output: {schema: GenerateRecipeFromIngredientsOutputSchema},
-  prompt: `You are a recipe creation expert. Given a list of ingredients, dietary restrictions, and cooking time preferences, you will generate three distinct and detailed recipes.
+  prompt: `You are a recipe creation expert. Given a list of ingredients, dietary restrictions, cooking time preferences, and a specified language, you will generate three distinct and detailed recipes.
 
   Use the following CSV data as context for creating personalized or localized recipes. You should give priority to Malaysian and other Asian cuisines.
   
@@ -80,6 +81,7 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   {{{localizationContext}}}
   \`\`\`
 
+  Language for recipe generation: {{{language}}} (If not provided, default to English)
   Ingredients: {{{ingredients}}}
   Dietary Restrictions: {{{dietaryRestrictions}}}
   Cooking Time: {{{cookingTime}}}
@@ -89,7 +91,7 @@ const generateRecipeFromIngredientsPrompt = ai.definePrompt({
   IMPORTANT: For each recipe, you MUST identify which ingredients are required but were not in the original list provided by the user. Populate these in the 'missingIngredients' field. If no extra ingredients are needed, return an empty array for 'missingIngredients'.
   {{/if}}
 
-  Create three different recipes using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. Each recipe should include a name, a list of all ingredients, step-by-step instructions, and the estimated cooking time. 
+  Create three different recipes using the provided ingredients, adhering to any specified dietary restrictions and cooking time preferences. Each recipe must be written entirely in the specified language. This includes the recipe name, ingredients, instructions, cooking time, dietary information, and tags.
     
   Output the recipes in a structured format within a 'recipes' array. If you cannot generate recipes for any reason (e.g., the combination is impossible), return an empty 'recipes' array.
   `,
@@ -105,6 +107,7 @@ const generateRecipeFromIngredientsFlow = ai.defineFlow(
     const {output} = await generateRecipeFromIngredientsPrompt({
       ...input,
       localizationContext,
+      language: input.language || 'en', // Default to English if not provided
     });
     if (!output) {
         throw new Error("The AI model did not return a valid response.");

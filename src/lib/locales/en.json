@@ -1,0 +1,69 @@
+{
+    "header": {
+        "recipes": "Recipes",
+        "favorites": "My Favorites",
+        "admin": "Admin Dashboard",
+        "login": "Login",
+        "signup": "Sign Up",
+        "logout": "Log out"
+    },
+    "generator": {
+        "title": "Turn Leftovers into Delights",
+        "subtitle": "Got some ingredients lying around? Don't let them go to waste! Tell us what you have, and we'll whip up delicious recipes for you.",
+        "cardTitle": "Your Kitchen Pantry",
+        "cardDescription": "List your ingredients, separated by commas. Then, select your preferences.",
+        "ingredientsLabel": "Available Ingredients",
+        "ingredientsPlaceholder": "e.g., chicken breast, broccoli, garlic, olive oil",
+        "dietaryNeedsLabel": "Dietary Needs",
+        "dietaryNeeds": {
+            "none": "None",
+            "vegan": "Vegan",
+            "vegetarian": "Vegetarian",
+            "glutenFree": "Gluten-Free",
+            "halal": "Halal"
+        },
+        "cookingTimeLabel": "Cooking Time",
+        "cookingTime": {
+            "any": "Any",
+            "quick": "Under 30 min",
+            "medium": "30-60 min",
+            "long": "Over 60 min"
+        },
+        "button": {
+            "generate": "Generate Recipes",
+            "generating": "Generating..."
+        },
+        "guest": {
+            "noAttempts": "You're out of free generations.",
+            "signUp": "Sign up",
+            "forUnlimited": "for unlimited recipes!",
+            "youHave": "You have",
+            "generationsLeft": "{{count}} free generation(s) left."
+        }
+    },
+    "recipeDisplay": {
+        "loginRequiredTitle": "Login Required",
+        "loginRequiredDesc": "You must be logged in to save recipes.",
+        "favoriteSuccessTitle": "Success!",
+        "favorited": "Favorited",
+        "addToFavorites": "Add to favorites",
+        "ingredients": "Ingredients",
+        "instructions": "Instructions",
+        "feedbackPrompt": "Enjoyed this recipe? Give it a rating!",
+        "feedbackLinkPrompt": "Or view all feedback for this recipe:",
+        "viewFullPage": "View Full Recipe Page"
+    },
+    "missingIngredients": {
+        "title": "Just a heads up!",
+        "description": "The generated recipes suggest a few ingredients you didn't list. Uncheck any you don't want to use, then confirm to generate new recipes or click cancel to see the current ones.",
+        "needed": "Additional ingredients needed:",
+        "showCurrent": "Show Me These Recipes",
+        "generateNew": "Generate New Recipes"
+    },
+    "common": {
+        "error": "Error",
+        "toastErrorTitle": "Oh no! Something went wrong.",
+        "toastSuccessTitle": "Recipes Generated!",
+        "toastSuccessDesc": "Scroll down to see your delicious new recipes."
+    }
+}
