@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { useState } from 'react';
 import { MobileNav } from './mobile-nav';
 import { useIsMobile } from '@/hooks/use-mobile';
+import flags from 'country-flag-emojis';
 
 
 export default function Header() {
@@ -63,15 +64,12 @@ export default function Header() {
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('en')} className={language !== 'en' ? 'opacity-50' : ''}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="24" height="24" className="rounded-sm">
-                    <clipPath id="a"><path d="M0 0v30h60V0z"/></clipPath><clipPath id="b"><path d="M30 15h30v15H30zM0 15h30v15H0zM0 0h30v15H0zM30 0h30v15H30z"/></clipPath><g clip-path="url(#a)"><path d="M0 0v30h60V0z" fill="#012169"/><path d="M0 0l60 30m0-30L0 30" stroke="#fff" stroke-width="6"/><path d="M0 0l60 30m0-30L0 30" clip-path="url(#b)" stroke="#C8102E" stroke-width="4"/><path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10"/><path d="M30 0v30M0 15h60" stroke="#C8102E" stroke-width="6"/></g>
-                </svg>
+              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('en')} className={`${language !== 'en' ? 'opacity-50' : ''} text-2xl`}>
+                {flags.GB}
                 <span className="sr-only">Switch to English</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('ms')} className={language !== 'ms' ? 'opacity-50' : ''}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 710 355" width="24" height="24" className="rounded-sm">
-                    <path fill="#fff" d="M0 0h710v355H0z"/><path stroke="#c00" stroke-width="25" d="M0 38h710M0 88h710M0 138h710M0 188h710M0 238h710M0 288h710M0 338h710"/><path fill="#006" d="M0 0h355v200H0z"/><path fill="#fc0" d="M196 131l-34-19-32 22 4-37-33-22 37-1 11-37 14 36 37 4-31 24zm-22-63l-4 1-3-2v-4l4-1 3 2v4z"/><path fill="#fc0" d="M211 48a44 44 0 10-88 0 44 44 0 1088 0z"/><path fill="#006" d="M222 48a44 44 0 10-88 0 44 44 0 1088 0z"/></svg>
+              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('ms')} className={`${language !== 'ms' ? 'opacity-50' : ''} text-2xl`}>
+                {flags.MY}
                 <span className="sr-only">Switch to Bahasa Melayu</span>
               </Button>
             </div>
