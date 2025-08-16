@@ -13,7 +13,8 @@ import { auth } from '@/lib/firebase';
 import { Separator } from './ui/separator';
 import { SheetDescription, SheetHeader, SheetTitle } from './ui/sheet';
 import { srOnly } from '@/lib/utils';
-import flags from 'country-flag-emojis';
+import { Flag } from 'react-flag-kit';
+
 
 interface MobileNavProps {
     onLinkClick: () => void;
@@ -76,11 +77,11 @@ export function MobileNav({ onLinkClick }: MobileNavProps) {
                 <p className="text-sm font-medium text-muted-foreground mb-2">{t('mobileNav.language')}</p>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => handleLanguageChange('en')} className={`flex-1 ${language !== 'en' ? 'opacity-50' : ''}`}>
-                    <span className="mr-2 text-lg">{flags.GB}</span>
+                    <Flag country="GB" className="mr-2" />
                     English
                   </Button>
                   <Button variant="outline" onClick={() => handleLanguageChange('ms')} className={`flex-1 ${language !== 'ms' ? 'opacity-50' : ''}`}>
-                    <span className="mr-2 text-lg">{flags.MY}</span>
+                    <Flag country="MY" className="mr-2" />
                     Melayu
                   </Button>
                 </div>

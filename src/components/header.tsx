@@ -24,7 +24,7 @@ import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { useState } from 'react';
 import { MobileNav } from './mobile-nav';
 import { useIsMobile } from '@/hooks/use-mobile';
-import flags from 'country-flag-emojis';
+import { Flag } from 'react-flag-kit';
 
 
 export default function Header() {
@@ -64,12 +64,12 @@ export default function Header() {
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('en')} className={`${language !== 'en' ? 'opacity-50' : ''} text-2xl`}>
-                {flags.GB}
+              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('en')} className={`${language !== 'en' ? 'opacity-50' : ''}`}>
+                <Flag country="GB" size={24} />
                 <span className="sr-only">Switch to English</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('ms')} className={`${language !== 'ms' ? 'opacity-50' : ''} text-2xl`}>
-                {flags.MY}
+              <Button variant="ghost" size="icon" onClick={() => handleLanguageChange('ms')} className={`${language !== 'ms' ? 'opacity-50' : ''}`}>
+                <Flag country="MY" size={24} />
                 <span className="sr-only">Switch to Bahasa Melayu</span>
               </Button>
             </div>
