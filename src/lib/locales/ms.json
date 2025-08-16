@@ -7,6 +7,11 @@
         "signup": "Daftar",
         "logout": "Log Keluar"
     },
+    "mobileNav": {
+        "title": "Menu Mudah Alih",
+        "description": "Navigasi melalui pilihan aplikasi.",
+        "language": "Bahasa"
+    },
     "generator": {
         "title": "Tukar Lebihan Makanan Menjadi Hidangan Lazat",
         "subtitle": "Ada bahan lebihan di dapur? Jangan biarkan ia membazir! Beritahu kami apa yang anda ada, dan kami akan sediakan resepi lazat untuk anda.",

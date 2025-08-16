@@ -7,6 +7,11 @@
         "signup": "Sign Up",
         "logout": "Log out"
     },
+    "mobileNav": {
+        "title": "Mobile Menu",
+        "description": "Navigate through the app options.",
+        "language": "Language"
+    },
     "generator": {
         "title": "Turn Leftovers into Delights",
         "subtitle": "Got some ingredients lying around? Don't let them go to waste! Tell us what you have, and we'll whip up delicious recipes for you.",

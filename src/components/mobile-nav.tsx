@@ -11,6 +11,8 @@ import { useTranslation } from '@/hooks/use-translation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Separator } from './ui/separator';
+import { SheetDescription, SheetHeader, SheetTitle } from './ui/sheet';
+import { srOnly } from '@/lib/utils';
 
 interface MobileNavProps {
     onLinkClick: () => void;
@@ -38,6 +40,10 @@ export function MobileNav({ onLinkClick }: MobileNavProps) {
   
   return (
     <div className="flex flex-col h-full">
+        <SheetHeader className={srOnly}>
+            <SheetTitle>{t('mobileNav.title')}</SheetTitle>
+            <SheetDescription>{t('mobileNav.description')}</SheetDescription>
+        </SheetHeader>
         <div className="flex items-center pb-4">
             <Link href="/" className="flex items-center space-x-2" onClick={onLinkClick}>
                 <Leaf className="h-6 w-6 text-primary" />
@@ -66,7 +72,7 @@ export function MobileNav({ onLinkClick }: MobileNavProps) {
         <div className="mt-auto space-y-4">
             <Separator />
             <div className="pt-2">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Language</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">{t('mobileNav.language')}</p>
                 <div className="flex gap-2">
                     <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => handleLanguageChange('en')} className="w-full">English</Button>
                     <Button variant={language === 'ms' ? 'default' : 'outline'} onClick={() => handleLanguageChange('ms')} className="w-full">Bahasa Melayu</Button>
@@ -96,4 +102,3 @@ export function MobileNav({ onLinkClick }: MobileNavProps) {
     </div>
   );
 }
-
