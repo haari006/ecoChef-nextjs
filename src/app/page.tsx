@@ -7,7 +7,7 @@ export default function Home() {
       className="relative min-h-[calc(100vh-57px)] flex items-center justify-center p-4 overflow-hidden"
     >
       <Image
-        src="/background.jpg"
+        src="/images/background.jpg"
         alt="A vibrant arrangement of fresh vegetables and herbs on a rustic wooden surface."
         fill
         className="object-cover"
