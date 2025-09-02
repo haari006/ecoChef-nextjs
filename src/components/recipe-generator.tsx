@@ -424,16 +424,7 @@ export default function RecipeGenerator() {
 
   return (
     <div className="space-y-12">
-      <section className="text-center">
-        <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tight">
-          {t('generator.title')}
-        </h1>
-        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          {t('generator.subtitle')}
-        </p>
-      </section>
-
-      <Card className="max-w-4xl mx-auto shadow-lg">
+      <Card className="max-w-4xl mx-auto shadow-lg bg-card/90 backdrop-blur-sm">
         <form ref={formRef} action={handleFormSubmit}>
           <CardHeader>
             <CardTitle className="font-headline text-2xl">
