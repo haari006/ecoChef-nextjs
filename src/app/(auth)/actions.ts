@@ -20,7 +20,16 @@ export async function createUserInDb(userData: {uid: string, name: string, email
     const validatedData = userSchema.parse(userData);
     const mongoClient = await clientPromise;
     const db = mongoClient.db();
-    await db.collection('users').insertOne({
+    const usersCollection = db.collection('users');
+
+    const existingUser = await usersCollection.findOne({ $or: [{ uid: validatedData.uid }, { email: validatedData.email }] });
+
+    if (existingUser) {
+        // This case should ideally be handled by Firebase Auth errors, but this is a good safeguard.
+        return { success: false, message: 'User with this UID or email already exists.' };
+    }
+
+    await usersCollection.insertOne({
       uid: validatedData.uid,
       name: validatedData.name,
       email: validatedData.email,
@@ -28,11 +37,11 @@ export async function createUserInDb(userData: {uid: string, name: string, email
     });
     return { success: true };
   } catch (e) {
-    console.error(e);
+    console.error('Database error:', e);
     if (e instanceof z.ZodError) {
       return { success: false, message: e.errors.map(err => err.message).join(', ') };
     }
-    return { success: false, message: 'An unknown error occurred while saving to the database.' };
+    return { success: false, message: 'An unknown error occurred while saving user to the database.' };
   }
 }
 
